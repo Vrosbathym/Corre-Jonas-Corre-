@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Scorpion Runner v4.2 (Loja Funcional)</title>
+<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; overflow: hidden; background-color: #222; }
+    canvas { display: block; border: none; cursor: pointer; }
+    p { display: none; }
+</style>
+</head>
+<body>
+
+<canvas id="gameCanvas"></canvas>
+<p>Use o mouse no menu/loja. Pressione ESPAÇO para pular / voltar ao menu (Game Over).</p>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+
+        // --- Setup Canvas ---
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        if (!canvas || !ctx) { console.error("Canvas ou Contexto não encontrado!"); return; }
+
+        // --- Carregamento de Assets ---
+        let playerImage = new Image(); let obstacleImage = new Image(); let backgroundImage = new Image();
+        let coinImage = new Image(); let lifeImage = new Image();
+        // Removida shopBackgroundImage
+        let jumpSound = new Audio('uoh.mp3'); let gameOverSound = new Audio('fail.mp3');
+        // Poderia adicionar som de compra/erro aqui
+
+        let assetsLoaded = 0;
+        const totalAssets = 5; // <<< VOLTOU PARA 5 (jogador, obstáculo, fundo, moeda, vida)
+        let playerImageLoaded, obstacleImageLoaded, backgroundImageLoaded, coinImageLoaded, lifeImageLoaded = false;
+
+        // --- Valores Base ---
+        const baseWidth = 600; const baseHeight = 300;
+        const basePlayerWidth = 40; const basePlayerHeight = 40;
+        const baseHitboxXOffset = 5; const baseHitboxYOffset = 5;
+        const baseObstacleWidth = 25; const baseObstacleHeight = 45;
+        const baseGravity = 0.3; const baseJumpStrength = -9; const baseDoubleJumpStrength = -7;
+        const baseGroundHeight = 15; const baseObstacleSpeed = 2.5;
+        const baseIconSize = 20; const baseButtonWidth = 200; const baseButtonHeight = 50;
+        const costOfExtraLives = 5; // <<< CUSTO DAS VIDAS EXTRAS
+
+        // --- Variáveis Dinâmicas ---
+        let playerWidth, playerHeight, playerX, playerY, velocityY;
+        let hitboxXOffset, hitboxYOffset, playerHitboxWidth, playerHitboxHeight;
+        let gravity, jumpStrength, doubleJumpStrength, onGround, canDoubleJump;
+        let groundY;
+        let obstacles = [], obstacleDrawWidth, obstacleDrawHeight, obstacleSpeed;
+        let obstacleSpawnTimer = 0, nextSpawnInterval = 120;
+        const minSpawnInterval = 70, maxSpawnInterval = 150;
+        let aerialObstacleMinY, aerialObstacleMaxY;
+        let score = 0, isGameOver = false, animationFrameId = null;
+        let scaleFactorHeight = 1, scaleFactorWidth = 1;
+        const skyColor = "#87CEEB";
+        let iconSize, buttonWidth, buttonHeight;
+
+        // --- Estado do Jogo e Loja ---
+        let gameState = 'LOADING';
+        let coins = 0; // Valor inicial, será carregado
+        let purchasedExtraLives = 0; // Valor inicial, será carregado
+        const startingLivesBase = 1;
+        let currentLives = 0;
+        let isInvincible = false; let invincibilityTimer = 0;
+        const invincibilityDuration = 90;
+        let shopMessage = ""; // Para mostrar mensagens como "Moedas insuficientes"
+        let shopMessageTimer = 0;
+
+        // --- Áreas Clicáveis (Retângulos) ---
+        let startButtonRect, shopButtonRect, shopBackButtonRect, shopBuyLivesButtonRect = null;
+
+        // --- Persistência (localStorage) ---
+        const COINS_KEY = "scorpionRunnerCoins";
+        const LIVES_KEY = "scorpionRunnerExtraLives";
+
+        function saveData() {
+            try {
+                localStorage.setItem(COINS_KEY, coins.toString());
+                localStorage.setItem(LIVES_KEY, purchasedExtraLives.toString());
+                console.log("Dados salvos:", { coins, purchasedExtraLives });
+            } catch (e) {
+                console.error("Erro ao salvar dados no localStorage:", e);
+            }
+        }
+
+        function loadData() {
+            try {
+                const savedCoins = localStorage.getItem(COINS_KEY);
+                const savedLives = localStorage.getItem(LIVES_KEY);
+
+                coins = savedCoins !== null ? parseInt(savedCoins, 10) : 0;
+                purchasedExtraLives = savedLives !== null ? parseInt(savedLives, 10) : 0;
+
+                if (isNaN(coins)) coins = 0; // Garante que é um número
+                if (isNaN(purchasedExtraLives)) purchasedExtraLives = 0;
+
+                console.log("Dados carregados:", { coins, purchasedExtraLives });
+            } catch (e) {
+                console.error("Erro ao carregar dados do localStorage:", e);
+                coins = 0; // Define padrões se houver erro
+                purchasedExtraLives = 0;
+            }
+        }
+
+        // --- Função de Redimensionamento e Escalonamento ---
+        function resizeAndScale() {
+            canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+            scaleFactorHeight = canvas.height / baseHeight; scaleFactorWidth = canvas.width / baseWidth;
+            // Escalonar Dimensões
+            playerHeight=basePlayerHeight*scaleFactorHeight; playerWidth=basePlayerWidth*scaleFactorHeight; obstacleDrawHeight=baseObstacleHeight*scaleFactorHeight; obstacleDrawWidth=baseObstacleWidth*scaleFactorHeight; hitboxXOffset=baseHitboxXOffset*scaleFactorHeight; hitboxYOffset=baseHitboxYOffset*scaleFactorHeight; playerHitboxWidth=playerWidth-(hitboxXOffset*2); playerHitboxHeight=playerHeight-(hitboxYOffset*2); iconSize=baseIconSize*scaleFactorHeight; buttonWidth=baseButtonWidth*scaleFactorWidth; buttonHeight=baseButtonHeight*scaleFactorHeight;
+            // Escalonar Posições e Física
+            playerX=50*scaleFactorWidth; groundY=canvas.height-(baseGroundHeight*scaleFactorHeight); gravity=baseGravity*scaleFactorHeight; jumpStrength=baseJumpStrength*scaleFactorHeight; doubleJumpStrength=baseDoubleJumpStrength*scaleFactorHeight; obstacleSpeed=baseObstacleSpeed*scaleFactorWidth; aerialObstacleMinY=groundY-obstacleDrawHeight-playerHeight*1.8; aerialObstacleMaxY=groundY-obstacleDrawHeight-playerHeight*1.1;
+
+            // Botões Menu
+            const buttonSpacing = buttonHeight * 0.5; const startButtonY = canvas.height/2 - buttonHeight - buttonSpacing/2; const shopButtonY = canvas.height/2 + buttonSpacing/2;
+            startButtonRect = {x:canvas.width/2 - buttonWidth/2, y:startButtonY, width:buttonWidth, height:buttonHeight}; shopButtonRect = {x:canvas.width/2 - buttonWidth/2, y:shopButtonY, width:buttonWidth, height:buttonHeight};
+            // Botões Loja
+            const backButtonMargin = 20 * scaleFactorWidth;
+            shopBackButtonRect = { x: canvas.width - buttonWidth*0.8 - backButtonMargin, y: canvas.height - buttonHeight*0.8 - backButtonMargin, width: buttonWidth*0.8, height: buttonHeight*0.8};
+            // Botão Comprar (abaixo do texto do item)
+            const buyButtonY = 150 * scaleFactorHeight; // Posição Y aproximada do botão comprar
+            shopBuyLivesButtonRect = { x: canvas.width/2 - buttonWidth/2, y: buyButtonY, width: buttonWidth, height: buttonHeight};
+
+            if (gameState !== 'LOADING') { draw(); }
+        }
+
+        // --- Carregamento ---
+        function onAllAssetsLoaded() { console.log("Todos os assets carregados!"); loadData(); gameState = 'MENU'; resizeAndScale(); gameLoop(); } // <<< CHAMA loadData() AQUI
+        function assetLoaded() { assetsLoaded++; console.log(`Assets carregados: ${assetsLoaded}/${totalAssets}`); if (assetsLoaded === totalAssets) { onAllAssetsLoaded(); } }
+        // Handlers onload/onerror
+        playerImage.onload=()=>{playerImageLoaded=true;assetLoaded();}; playerImage.onerror=()=>{console.error("Erro 'images.png'.");}; obstacleImage.onload=()=>{obstacleImageLoaded=true;assetLoaded();}; obstacleImage.onerror=()=>{console.error("Erro 'pedroaugusto.png'.");}; backgroundImage.onload=()=>{backgroundImageLoaded=true;assetLoaded();}; backgroundImage.onerror=()=>{console.error("Erro 'fundo.png'.");}; coinImage.onload=()=>{coinImageLoaded=true;assetLoaded();}; coinImage.onerror=()=>{console.error("Erro 'coin.png'.");}; lifeImage.onload=()=>{lifeImageLoaded=true;assetLoaded();}; lifeImage.onerror=()=>{console.error("Erro 'vida.png'.");};
+
+
+        // --- Funções do Jogo ---
+        function handleSpaceBar() { switch (gameState) { case 'PLAYING': if(onGround){jumpSound.currentTime=0;jumpSound.play();velocityY=jumpStrength;onGround=false;canDoubleJump=true;}else if(canDoubleJump){jumpSound.currentTime=0;jumpSound.play();velocityY=doubleJumpStrength;canDoubleJump=false;} break; case 'GAME_OVER': isGameOver=false; gameState='MENU'; break; } }
+
+        // <<< RESETGAME ATUALIZADO >>>
+        function resetGame() {
+            if (!animationFrameId && gameState === 'PLAYING') { gameLoop(); }
+            playerY = groundY - playerHeight; velocityY = 0; obstacles = []; score = 0;
+            obstacleSpawnTimer = 0; nextSpawnInterval = 120; isGameOver = false;
+            onGround = true; canDoubleJump = false;
+            currentLives = startingLivesBase + purchasedExtraLives; // <<< USA VIDAS COMPRADAS
+            // Removido reset de coins
+            isInvincible = false; invincibilityTimer = 0;
+            console.log(`Jogo iniciado/resetado com ${currentLives} vidas`);
+        }
+
+        function spawnObstacle() { /* ...código igual ... */ let obstacleY,type;if(Math.random()<0.5){type='ground';obstacleY=groundY-obstacleDrawHeight;}else{type='air';obstacleY=Math.random()*(aerialObstacleMaxY-aerialObstacleMinY)+aerialObstacleMinY;}obstacles.push({x:canvas.width,y:obstacleY,width:obstacleDrawWidth,height:obstacleDrawHeight,image:obstacleImage,type:type,scored:false});nextSpawnInterval=Math.floor(Math.random()*(maxSpawnInterval-minSpawnInterval+1))+minSpawnInterval; }
+
+        // <<< UPDATE ATUALIZADO PARA SALVAR COINS >>>
+        function update() { if (gameState !== 'PLAYING') { if(isGameOver) gameState = 'GAME_OVER'; return; } if (isInvincible) { invincibilityTimer--; if (invincibilityTimer <= 0) { isInvincible = false; } } if (!onGround) { velocityY += gravity; playerY += velocityY; } if (playerY + playerHeight >= groundY) { playerY = groundY - playerHeight; velocityY = 0; if (!onGround) { onGround = true; canDoubleJump = false; } } if (playerY < 0) { playerY = 0; velocityY = 0; } obstacleSpawnTimer++; if (obstacleSpawnTimer >= nextSpawnInterval) { spawnObstacle(); obstacleSpawnTimer = 0; } for (let i = obstacles.length - 1; i >= 0; i--) { let obs = obstacles[i]; obs.x -= obstacleSpeed; if (obs.x + obs.width < 0) { obstacles.splice(i, 1); continue; } let playerHitboxX = playerX + hitboxXOffset; let playerHitboxY = playerY + hitboxYOffset; if (!isInvincible && playerHitboxX < obs.x + obs.width && playerHitboxX + playerHitboxWidth > obs.x && playerHitboxY < obs.y + obs.height && playerHitboxY + playerHitboxHeight > obs.y) { currentLives--; obstacles.splice(i, 1); if (currentLives <= 0) { isGameOver = true; gameState = 'GAME_OVER'; gameOverSound.currentTime = 0; gameOverSound.play(); return; } else { isInvincible = true; invincibilityTimer = invincibilityDuration; } } if (obs.x + obs.width < playerX && !obs.scored) { score++; obs.scored = true; if (score > 0 && score % 5 === 0) { coins++; saveData(); /* <<< SALVA AO GANHAR MOEDA >>> */ console.log("Coin Ganha! Total:", coins); } } } }
+
+        // <<< DRAW ATUALIZADA PARA LOJA >>>
+        function draw() {
+            // 1. Fundo (Comum a MENU, SHOP, PLAYING, GAME_OVER)
+            if (backgroundImageLoaded) { ctx.drawImage(backgroundImage, 0, 0, canvas.width, canvas.height); }
+            else { ctx.fillStyle = skyColor; ctx.fillRect(0, 0, canvas.width, canvas.height); }
+
+            // 2. Desenhar Elementos Baseado no Estado
+            if (gameState === 'MENU') {
+                // Decorações e Botões Iniciar/Loja (igual anterior)
+                 if(obstacleImageLoaded){const d=1.2,w=obstacleDrawWidth*d,h=obstacleDrawHeight*d,s=h*1.2,y=(canvas.height-(3*h+2*(s-h)))/2,m=15*scaleFactorWidth,l=m,r=canvas.width-w-m;ctx.drawImage(obstacleImage,l,y,w,h);ctx.drawImage(obstacleImage,l,y+s,w,h);ctx.drawImage(obstacleImage,l,y+s*2,w,h);ctx.drawImage(obstacleImage,r,y,w,h);ctx.drawImage(obstacleImage,r,y+s,w,h);ctx.drawImage(obstacleImage,r,y+s*2,w,h);}
+                 ctx.fillStyle="#00A000"; ctx.strokeStyle="#006400"; ctx.lineWidth=2*scaleFactorHeight; if(startButtonRect){ctx.fillRect(startButtonRect.x,startButtonRect.y,startButtonRect.width,startButtonRect.height);ctx.strokeRect(startButtonRect.x,startButtonRect.y,startButtonRect.width,startButtonRect.height);} if(shopButtonRect){ctx.fillRect(shopButtonRect.x,shopButtonRect.y,shopButtonRect.width,shopButtonRect.height);ctx.strokeRect(shopButtonRect.x,shopButtonRect.y,shopButtonRect.width,shopButtonRect.height);}
+                 let fb=25*scaleFactorHeight;ctx.fillStyle="#FFFFFF";ctx.font=`bold ${fb}px Arial`;ctx.textAlign="center";ctx.textBaseline="middle";if(startButtonRect)ctx.fillText("Iniciar Jogo",startButtonRect.x+startButtonRect.width/2,startButtonRect.y+startButtonRect.height/2);if(shopButtonRect)ctx.fillText("Loja",shopButtonRect.x+shopButtonRect.width/2,shopButtonRect.y+shopButtonRect.height/2);ctx.textBaseline="alphabetic";
+                // Moedas no Menu (igual anterior)
+                 const uiY=25*scaleFactorHeight,uiX=10*scaleFactorWidth,sp=10*scaleFactorWidth;let cX=uiX;if(coinImageLoaded){ctx.drawImage(coinImage,cX,uiY-iconSize*0.8,iconSize,iconSize);cX+=iconSize+sp;}ctx.fillStyle="#FFFFFF";ctx.strokeStyle="#000000";ctx.lineWidth=1;ctx.font=`${20*scaleFactorHeight}px Arial`;ctx.textAlign="left";ctx.strokeText(`${coins}`,cX,uiY);ctx.fillText(`${coins}`,cX,uiY);
+
+            } else if (gameState === 'SHOP') {
+                 // Fundo da Loja já desenhado (usa o mesmo do jogo)
+                 // Desenha Moedas na Loja
+                 const uiY=25*scaleFactorHeight,uiX=10*scaleFactorWidth,sp=10*scaleFactorWidth;let cX=uiX;if(coinImageLoaded){ctx.drawImage(coinImage,cX,uiY-iconSize*0.8,iconSize,iconSize);cX+=iconSize+sp;}ctx.fillStyle="#FFFFFF";ctx.strokeStyle="#000000";ctx.lineWidth=1;ctx.font=`${20*scaleFactorHeight}px Arial`;ctx.textAlign="left";ctx.strokeText(`${coins}`,cX,uiY);ctx.fillText(`${coins}`,cX,uiY);
+
+                 // Desenha Itens da Loja
+                 let itemY = 100 * scaleFactorHeight;
+                 ctx.fillStyle = "#FFFFFF"; ctx.textAlign = "center";
+                 ctx.font = `bold ${25 * scaleFactorHeight}px Arial`;
+                 ctx.strokeText("Comprar 3 Vidas Extras", canvas.width / 2, itemY); // Adiciona contorno
+                 ctx.fillText("Comprar 3 Vidas Extras", canvas.width / 2, itemY);
+                 itemY += 35 * scaleFactorHeight;
+                 ctx.font = `${20 * scaleFactorHeight}px Arial`;
+                 ctx.strokeText(`Custo: ${costOfExtraLives} Moedas`, canvas.width / 2, itemY); // Adiciona contorno
+                 ctx.fillText(`Custo: ${costOfExtraLives} Moedas`, canvas.width / 2, itemY);
+                 itemY += 40 * scaleFactorHeight;
+
+                // Desenha Botão Comprar
+                 if (shopBuyLivesButtonRect) {
+                     ctx.fillStyle = "#00A000"; // Verde
+                     ctx.strokeStyle = "#006400";
+                     ctx.lineWidth = 2 * scaleFactorHeight;
+                     ctx.fillRect(shopBuyLivesButtonRect.x, shopBuyLivesButtonRect.y, shopBuyLivesButtonRect.width, shopBuyLivesButtonRect.height);
+                     ctx.strokeRect(shopBuyLivesButtonRect.x, shopBuyLivesButtonRect.y, shopBuyLivesButtonRect.width, shopBuyLivesButtonRect.height);
+                     ctx.fillStyle = "#FFFFFF";
+                     ctx.font = `bold ${20 * scaleFactorHeight}px Arial`;
+                     ctx.textAlign = "center"; ctx.textBaseline = "middle";
+                     ctx.fillText("Comprar", shopBuyLivesButtonRect.x + shopBuyLivesButtonRect.width / 2, shopBuyLivesButtonRect.y + shopBuyLivesButtonRect.height / 2);
+                     ctx.textBaseline = "alphabetic";
+                 }
+
+                 // Desenha Mensagem da Loja (se houver)
+                 if (shopMessageTimer > 0) {
+                     shopMessageTimer--; // Decrementa timer
+                     ctx.fillStyle = (shopMessage.includes("sucesso")) ? "#00FF00" : "#FF0000"; // Verde ou Vermelho
+                     ctx.font = `bold ${18 * scaleFactorHeight}px Arial`;
+                     ctx.textAlign = "center";
+                     ctx.fillText(shopMessage, canvas.width / 2, itemY + 60 * scaleFactorHeight);
+                 }
+
+
+                 // Desenha Botão Voltar
+                 if (shopBackButtonRect) {
+                     ctx.fillStyle = "#A00000"; ctx.strokeStyle = "#640000"; ctx.lineWidth = 2*scaleFactorHeight;
+                     ctx.fillRect(shopBackButtonRect.x,shopBackButtonRect.y,shopBackButtonRect.width,shopBackButtonRect.height); ctx.strokeRect(shopBackButtonRect.x,shopBackButtonRect.y,shopBackButtonRect.width,shopBackButtonRect.height);
+                     ctx.fillStyle = "#FFFFFF"; ctx.font = `bold ${20*scaleFactorHeight}px Arial`; ctx.textAlign="center"; ctx.textBaseline="middle"; ctx.fillText("Voltar",shopBackButtonRect.x+shopBackButtonRect.width/2,shopBackButtonRect.y+shopBackButtonRect.height/2); ctx.textBaseline="alphabetic";
+                 }
+
+
+            } else if (gameState === 'PLAYING') {
+                // Desenha Jogo Normal (Obstáculos, Jogador, UI)
+                if(obstacleImageLoaded){for(let o of obstacles){ctx.drawImage(o.image,o.x,o.y,o.width,o.height);}}let dP=!isInvincible||Math.floor(Date.now()/100)%2===0;if(dP&&playerImageLoaded){ctx.drawImage(playerImage,playerX,playerY,playerWidth,playerHeight);}
+                const uy=25*scaleFactorHeight,ux=10*scaleFactorWidth,sp=10*scaleFactorWidth;ctx.fillStyle="#000000";ctx.font=`${20*scaleFactorHeight}px Arial`;ctx.textAlign="left";let cX=ux;ctx.fillText(`Score: ${score}`,cX,uy);cX+=ctx.measureText(`Score: ${score}`).width+sp*2;if(coinImageLoaded){ctx.drawImage(coinImage,cX,uy-iconSize*0.8,iconSize,iconSize);cX+=iconSize+sp;}ctx.fillText(`${coins}`,cX,uy);cX+=ctx.measureText(`${coins}`).width+sp*2;if(lifeImageLoaded){ctx.drawImage(lifeImage,cX,uy-iconSize*0.8,iconSize,iconSize);cX+=iconSize+sp;}ctx.fillText(`${currentLives}`,cX,uy);
+
+
+            } else if (gameState === 'GAME_OVER') {
+                // Desenha Jogo Normal (estado final) + Overlay
+                if(obstacleImageLoaded){for(let o of obstacles){ctx.drawImage(o.image,o.x,o.y,o.width,o.height);}}if(playerImageLoaded){ctx.drawImage(playerImage,playerX,playerY,playerWidth,playerHeight);}
+                ctx.fillStyle="rgba(0,0,0,0.7)";ctx.fillRect(0,0,canvas.width,canvas.height);ctx.fillStyle="#ffffff";let fgo=40*scaleFactorHeight,fsc=20*scaleFactorHeight,fr=16*scaleFactorHeight;ctx.font=`${fgo}px Arial`;ctx.textAlign="center";ctx.fillText("Game Over",canvas.width/2,canvas.height/2-fgo);ctx.font=`${fsc}px Arial`;ctx.fillText(`Score Final: ${score}`,canvas.width/2,canvas.height/2);ctx.font=`${fr}px Arial`;ctx.fillText("Pressione ESPAÇO para Voltar ao Menu",canvas.width/2,canvas.height/2+fsc*1.5);
+            }
+        } // Fim da função draw
+
+        function gameLoop() { update(); draw(); animationFrameId = requestAnimationFrame(gameLoop); }
+
+        // --- Ouvintes de Evento ---
+        document.addEventListener('keydown', (event) => { if (event.code === 'Space') { event.preventDefault(); handleSpaceBar(); } });
+        window.addEventListener('resize', resizeAndScale);
+
+        // <<< MOUSE CLICK HANDLER ATUALIZADO PARA LOJA >>>
+        canvas.addEventListener('click', (event) => {
+             const rect = canvas.getBoundingClientRect();
+             const mouseX = event.clientX - rect.left;
+             const mouseY = event.clientY - rect.top;
+
+             if (gameState === 'MENU') {
+                 if (startButtonRect && mouseX>=startButtonRect.x && mouseX<=startButtonRect.x+startButtonRect.width && mouseY>=startButtonRect.y && mouseY<=startButtonRect.y+startButtonRect.height) {
+                     gameState = 'PLAYING'; resetGame();
+                 } else if (shopButtonRect && mouseX>=shopButtonRect.x && mouseX<=shopButtonRect.x+shopButtonRect.width && mouseY>=shopButtonRect.y && mouseY<=shopButtonRect.y+shopButtonRect.height) {
+                     gameState = 'SHOP'; shopMessage = ""; shopMessageTimer = 0; // Limpa msg ao entrar
+                 }
+             } else if (gameState === 'SHOP') {
+                  // Botão Voltar
+                 if (shopBackButtonRect && mouseX>=shopBackButtonRect.x && mouseX<=shopBackButtonRect.x+shopBackButtonRect.width && mouseY>=shopBackButtonRect.y && mouseY<=shopBackButtonRect.y+shopBackButtonRect.height) {
+                     gameState = 'MENU';
+                 }
+                 // Botão Comprar Vidas
+                 else if (shopBuyLivesButtonRect && mouseX>=shopBuyLivesButtonRect.x && mouseX<=shopBuyLivesButtonRect.x+shopBuyLivesButtonRect.width && mouseY>=shopBuyLivesButtonRect.y && mouseY<=shopBuyLivesButtonRect.y+shopBuyLivesButtonRect.height) {
+                     console.log("Tentando comprar vidas...");
+                     if (coins >= costOfExtraLives) {
+                         coins -= costOfExtraLives;
+                         purchasedExtraLives += 3;
+                         saveData(); // Salva os novos totais
+                         shopMessage = "Compra realizada com sucesso!";
+                         shopMessageTimer = 120; // Mostra msg por ~2 segundos
+                         console.log("Vidas compradas! Extras:", purchasedExtraLives, "Moedas:", coins);
+                     } else {
+                         shopMessage = "Moedas insuficientes!";
+                         shopMessageTimer = 120; // Mostra msg por ~2 segundos
+                         console.log("Moedas insuficientes.");
+                     }
+                 }
+             }
+        });
+
+
+        // --- Inicia o Carregamento ---
+        loadData(); // <<< CARREGA DADOS SALVOS PRIMEIRO
+        console.log("Iniciando carregamento dos assets...");
+        playerImage.src = 'images.png'; obstacleImage.src = 'pedroaugusto.png'; backgroundImage.src = 'fundo.png';
+        coinImage.src = 'coin.png'; lifeImage.src = 'vida.png';
+        // shopBackgroundImage.src = 'loja.jpg'; // Removido - não precisamos mais carregar
+
+    }); // Fim DOMContentLoaded
+</script>
+
+</body>
+</html>
