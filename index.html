@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>Corre, Jonas, Corre! v4.4 (Syntax Fix)</title>
+    <title>Corre, Jonas, Corre! v4.5 (Debug)</title>
     <link rel="icon" type="image/png" href="pedroaugusto.png">
     <link rel="apple-touch-icon" href="pedroaugusto.png">
 <style>
@@ -65,56 +65,94 @@
         function spawnObstacle(){let oY,t;if(Math.random()<0.5){t='ground';oY=groundY-obstacleDrawHeight;}else{t='air';oY=Math.random()*(aerialObstacleMaxY-aerialObstacleMinY)+aerialObstacleMinY;}obstacles.push({x:canvas.width,y:oY,width:obstacleDrawWidth,height:obstacleDrawHeight,image:obstacleImage,type:t,scored:false});nextSpawnInterval=Math.floor(Math.random()*(maxSpawnInterval-minSpawnInterval+1))+minSpawnInterval;}
         function update(){if(gameState!=='PLAYING'){if(isGameOver&&gameState!=='GAME_OVER')gameState='GAME_OVER';return;}if(isInvincible){invincibilityTimer--;if(invincibilityTimer<=0){isInvincible=false;}}if(!onGround){velocityY+=gravity;playerY+=velocityY;}if(playerY+playerHeight>=groundY){playerY=groundY-playerHeight;velocityY=0;if(!onGround){onGround=true;canDoubleJump=false;}}if(playerY<0){playerY=0;velocityY=0;}obstacleSpawnTimer++;if(obstacleSpawnTimer>=nextSpawnInterval){spawnObstacle();obstacleSpawnTimer=0;}for(let i=obstacles.length-1;i>=0;i--){let o=obstacles[i];o.x-=obstacleSpeed;if(o.x+o.width<0){obstacles.splice(i,1);continue;}let pX=playerX+hitboxXOffset;let pY=playerY+hitboxYOffset;if(!isInvincible&&pX<o.x+o.width&&pX+playerHitboxWidth>o.x&&pY<o.y+o.height&&pY+playerHitboxHeight>o.y){currentLives--;obstacles.splice(i,1);if(currentLives<=0){isGameOver=true;gameState='GAME_OVER';gameOverSound.currentTime=0;gameOverSound.play();return;}else{isInvincible=true;invincibilityTimer=invincibilityDuration;}}if(o.x+o.width<playerX&&!o.scored){score++;o.scored=true;if(score>0&&score%5===0){coins++;saveData();}}}}
 
-        // <<< DRAW REVISADA >>>
+        // <<< DRAW COM TRY...CATCH >>>
         function draw() {
-            // Fundo
-            if(backgroundImageLoaded){ctx.drawImage(backgroundImage,0,0,canvas.width,canvas.height);}else{ctx.fillStyle=skyColor;ctx.fillRect(0,0,canvas.width,canvas.height);}
+            try { // Try para o fundo
+                if (backgroundImageLoaded) {
+                    ctx.drawImage(backgroundImage, 0, 0, canvas.width, canvas.height);
+                } else {
+                    ctx.fillStyle = skyColor;
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                }
+            } catch (e) { console.error("Erro ao desenhar fundo:", e); }
 
             // Desenho por Estado
             if (gameState === 'MENU') {
-                if(obstacleImageLoaded){const d=1.2,w=obstacleDrawWidth*d,h=obstacleDrawHeight*d,s=h*1.2,y=(canvas.height-(3*h+2*(s-h)))/2,m=15*scaleFactorWidth,l=m,r=canvas.width-w-m;ctx.drawImage(obstacleImage,l,y,w,h);ctx.drawImage(obstacleImage,l,y+s,w,h);ctx.drawImage(obstacleImage,l,y+s*2,w,h);ctx.drawImage(obstacleImage,r,y,w,h);ctx.drawImage(obstacleImage,r,y+s,w,h);ctx.drawImage(obstacleImage,r,y+s*2,w,h);}
-                ctx.fillStyle="#00A000";ctx.strokeStyle="#006400";ctx.lineWidth=2*scaleFactorHeight;if(startButtonRect){ctx.fillRect(startButtonRect.x,startButtonRect.y,startButtonRect.width,startButtonRect.height);ctx.strokeRect(startButtonRect.x,startButtonRect.y,startButtonRect.width,startButtonRect.height);}if(shopButtonRect){ctx.fillRect(shopButtonRect.x,shopButtonRect.y,shopButtonRect.width,shopButtonRect.height);ctx.strokeRect(shopButtonRect.x,shopButtonRect.y,shopButtonRect.width,shopButtonRect.height);}
-                let fb=25*scaleFactorHeight;ctx.fillStyle="#FFFFFF";ctx.font=`bold ${fb}px Arial`;ctx.textAlign="center";ctx.textBaseline="middle";if(startButtonRect)ctx.fillText("Iniciar Jogo",startButtonRect.x+startButtonRect.width/2,startButtonRect.y+startButtonRect.height/2);if(shopButtonRect)ctx.fillText("Loja",shopButtonRect.x+shopButtonRect.width/2,shopButtonRect.y+shopButtonRect.height/2);ctx.textBaseline="alphabetic";
-                const uiY=25*scaleFactorHeight,ux=10*scaleFactorWidth,sp=10*scaleFactorWidth;let cX=ux;if(coinImageLoaded){ctx.drawImage(coinImage,cX,uiY-iconSize*0.8,iconSize,iconSize);cX+=iconSize+sp;}ctx.fillStyle="#FFFFFF";ctx.strokeStyle="#000000";ctx.lineWidth=1;ctx.font=`${20*scaleFactorHeight}px Arial`;ctx.textAlign="left";ctx.strokeText(`${coins}`,cX,uiY);ctx.fillText(`${coins}`,cX,uiY);
+                try { // Try para Menu Inteiro
+                    // Decorações
+                    if (obstacleImageLoaded) {
+                        const d=1.2,w=obstacleDrawWidth*d,h=obstacleDrawHeight*d,s=h*1.2,y=(canvas.height-(3*h+2*(s-h)))/2,m=15*scaleFactorWidth,l=m,r=canvas.width-w-m;
+                        ctx.drawImage(obstacleImage,l,y,w,h); ctx.drawImage(obstacleImage,l,y+s,w,h); ctx.drawImage(obstacleImage,l,y+s*2,w,h);
+                        ctx.drawImage(obstacleImage,r,y,w,h); ctx.drawImage(obstacleImage,r,y+s,w,h); ctx.drawImage(obstacleImage,r,y+s*2,w,h);
+                    }
+                    // Botões
+                    ctx.fillStyle="#00A000"; ctx.strokeStyle="#006400"; ctx.lineWidth=2*scaleFactorHeight;
+                    if(startButtonRect){ ctx.fillRect(startButtonRect.x,startButtonRect.y,startButtonRect.width,startButtonRect.height); ctx.strokeRect(startButtonRect.x,startButtonRect.y,startButtonRect.width,startButtonRect.height); }
+                    if(shopButtonRect){ ctx.fillRect(shopButtonRect.x,shopButtonRect.y,shopButtonRect.width,shopButtonRect.height); ctx.strokeRect(shopButtonRect.x,shopButtonRect.y,shopButtonRect.width,shopButtonRect.height); }
+                    // Texto Botões
+                    let fb=25*scaleFactorHeight; ctx.fillStyle="#FFFFFF"; ctx.font=`bold ${fb}px Arial`; ctx.textAlign="center"; ctx.textBaseline="middle";
+                    if(startButtonRect) ctx.fillText("Iniciar Jogo",startButtonRect.x+startButtonRect.width/2,startButtonRect.y+startButtonRect.height/2);
+                    if(shopButtonRect) ctx.fillText("Loja",shopButtonRect.x+shopButtonRect.width/2,shopButtonRect.y+shopButtonRect.height/2);
+                    ctx.textBaseline="alphabetic";
+                    // Moedas
+                    const uiY=25*scaleFactorHeight,ux=10*scaleFactorWidth,sp=10*scaleFactorWidth; let cX=ux;
+                    if(coinImageLoaded){ ctx.drawImage(coinImage,cX,uiY-iconSize*0.8,iconSize,iconSize); cX+=iconSize+sp; }
+                    ctx.fillStyle="#FFFFFF"; ctx.strokeStyle="#000000"; ctx.lineWidth=1; ctx.font=`${20*scaleFactorHeight}px Arial`; ctx.textAlign="left";
+                    ctx.strokeText(`${coins}`,cX,uiY); ctx.fillText(`${coins}`,cX,uiY);
+                } catch(e) { console.error("Erro ao desenhar MENU:", e); }
 
-            } // Fim do gameState 'MENU'
+            } else if (gameState === 'SHOP') {
+                try { // Try para Loja Inteira
+                    // Moedas
+                    const uiY=25*scaleFactorHeight,ux=10*scaleFactorWidth,sp=10*scaleFactorWidth; let cX=ux;
+                    if(coinImageLoaded){ ctx.drawImage(coinImage,cX,uiY-iconSize*0.8,iconSize,iconSize); cX+=iconSize+sp; }
+                    ctx.fillStyle="#FFFFFF"; ctx.strokeStyle="#000000"; ctx.lineWidth=1; ctx.font=`${20*scaleFactorHeight}px Arial`; ctx.textAlign="left";
+                    ctx.strokeText(`${coins}`, cX, uiY); ctx.fillText(`${coins}`, cX, uiY);
+                    // Itens
+                    let itemY = 100 * scaleFactorHeight;
+                    ctx.fillStyle = "#FFFFFF"; ctx.textAlign = "center"; ctx.font = `bold ${25 * scaleFactorHeight}px Arial`;
+                    ctx.strokeText("Comprar 1 Vida Extra", canvas.width / 2, itemY); ctx.fillText("Comprar 1 Vida Extra", canvas.width / 2, itemY);
+                    itemY += 35 * scaleFactorHeight;
+                    ctx.font = `${20 * scaleFactorHeight}px Arial`;
+                    ctx.strokeText(`Custo: ${costOfSingleLife} Moedas`, canvas.width / 2, itemY); ctx.fillText(`Custo: ${costOfSingleLife} Moedas`, canvas.width / 2, itemY);
+                    // Botão Comprar
+                    if(shopBuyLivesButtonRect){ctx.fillStyle="#00A000";ctx.strokeStyle="#006400";ctx.lineWidth=2*scaleFactorHeight;ctx.fillRect(shopBuyLivesButtonRect.x,shopBuyLivesButtonRect.y,shopBuyLivesButtonRect.width,shopBuyLivesButtonRect.height);ctx.strokeRect(shopBuyLivesButtonRect.x,shopBuyLivesButtonRect.y,shopBuyLivesButtonRect.width,shopBuyLivesButtonRect.height);ctx.fillStyle="#FFFFFF";ctx.font=`bold ${20*scaleFactorHeight}px Arial`;ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText("Comprar",shopBuyLivesButtonRect.x+shopBuyLivesButtonRect.width/2,shopBuyLivesButtonRect.y+shopBuyLivesButtonRect.height/2);ctx.textBaseline="alphabetic";}
+                    // Mensagem Loja
+                    if(shopMessageTimer>0){shopMessageTimer--;ctx.fillStyle=(shopMessage.includes("sucesso"))?"#00FF00":"#FF0000";ctx.font=`bold ${18*scaleFactorHeight}px Arial`;ctx.textAlign="center";ctx.fillText(shopMessage,canvas.width/2,shopBuyLivesButtonRect.y+buttonHeight+20*scaleFactorHeight);}
+                    // Botão Voltar
+                    if(shopBackButtonRect){ctx.fillStyle="#A00000";ctx.strokeStyle="#640000";ctx.lineWidth=2*scaleFactorHeight;ctx.fillRect(shopBackButtonRect.x,shopBackButtonRect.y,shopBackButtonRect.width,shopBackButtonRect.height);ctx.strokeRect(shopBackButtonRect.x,shopBackButtonRect.y,shopBackButtonRect.width,shopBackButtonRect.height);ctx.fillStyle="#FFFFFF";ctx.font=`bold ${20*scaleFactorHeight}px Arial`;ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText("Voltar",shopBackButtonRect.x+shopBackButtonRect.width/2,shopBackButtonRect.y+shopBackButtonRect.height/2);ctx.textBaseline="alphabetic";}
+                } catch(e) { console.error("Erro ao desenhar SHOP:", e); }
 
-            else if (gameState === 'SHOP') {
-                 const uiY=25*scaleFactorHeight,ux=10*scaleFactorWidth,sp=10*scaleFactorWidth;let cX=ux;
-                 if(coinImageLoaded){ctx.drawImage(coinImage,cX,uiY-iconSize*0.8,iconSize,iconSize);cX+=iconSize+sp;}
-                 ctx.fillStyle="#FFFFFF";ctx.strokeStyle="#000000";ctx.lineWidth=1;ctx.font=`${20*scaleFactorHeight}px Arial`;ctx.textAlign="left";
-                 ctx.strokeText(`${coins}`, cX, uiY); // Usa uiY
-                 ctx.fillText(`${coins}`, cX, uiY);   // Usa uiY
+            } else if (gameState === 'PLAYING') {
+                try { // Try para Jogo
+                    // Obstáculos
+                    if(obstacleImageLoaded){for(let o of obstacles){ctx.drawImage(o.image,o.x,o.y,o.width,o.height);}}
+                    // Jogador
+                    let dP=!isInvincible||Math.floor(Date.now()/100)%2===0;if(dP&&playerImageLoaded){ctx.drawImage(playerImage,playerX,playerY,playerWidth,playerHeight);}
+                    // UI
+                    const uiY_play=25*scaleFactorHeight,ux_play=10*scaleFactorWidth,sp_play=10*scaleFactorWidth;ctx.fillStyle="#000000";ctx.font=`${20*scaleFactorHeight}px Arial`;ctx.textAlign="left";let cX_play=ux_play;ctx.fillText(`Score: ${score}`,cX_play,uiY_play);cX_play+=ctx.measureText(`Score: ${score}`).width+sp_play*2;if(coinImageLoaded){ctx.drawImage(coinImage,cX_play,uiY_play-iconSize*0.8,iconSize,iconSize);cX_play+=iconSize+sp_play;}ctx.fillText(`${coins}`,cX_play,uiY_play);cX_play+=ctx.measureText(`${coins}`).width+sp_play*2;if(lifeImageLoaded){for(let i=0;i<currentLives;i++){ctx.drawImage(lifeImage,cX_play+i*(iconSize+sp_play*0.5),uiY_play-iconSize*0.8,iconSize,iconSize);}}
+                } catch(e) { console.error("Erro ao desenhar PLAYING:", e); }
 
-                 let itemY = 100 * scaleFactorHeight;
-                 ctx.fillStyle = "#FFFFFF"; ctx.textAlign = "center"; ctx.font = `bold ${25 * scaleFactorHeight}px Arial`;
-                 ctx.strokeText("Comprar 1 Vida Extra", canvas.width / 2, itemY); ctx.fillText("Comprar 1 Vida Extra", canvas.width / 2, itemY);
-                 itemY += 35 * scaleFactorHeight;
-                 ctx.font = `${20 * scaleFactorHeight}px Arial`;
-                 ctx.strokeText(`Custo: ${costOfSingleLife} Moedas`, canvas.width / 2, itemY); ctx.fillText(`Custo: ${costOfSingleLife} Moedas`, canvas.width / 2, itemY);
-
-                 if(shopBuyLivesButtonRect){ctx.fillStyle="#00A000";ctx.strokeStyle="#006400";ctx.lineWidth=2*scaleFactorHeight;ctx.fillRect(shopBuyLivesButtonRect.x,shopBuyLivesButtonRect.y,shopBuyLivesButtonRect.width,shopBuyLivesButtonRect.height);ctx.strokeRect(shopBuyLivesButtonRect.x,shopBuyLivesButtonRect.y,shopBuyLivesButtonRect.width,shopBuyLivesButtonRect.height);ctx.fillStyle="#FFFFFF";ctx.font=`bold ${20*scaleFactorHeight}px Arial`;ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText("Comprar",shopBuyLivesButtonRect.x+shopBuyLivesButtonRect.width/2,shopBuyLivesButtonRect.y+shopBuyLivesButtonRect.height/2);ctx.textBaseline="alphabetic";}
-                 if(shopMessageTimer>0){shopMessageTimer--;ctx.fillStyle=(shopMessage.includes("sucesso"))?"#00FF00":"#FF0000";ctx.font=`bold ${18*scaleFactorHeight}px Arial`;ctx.textAlign="center";ctx.fillText(shopMessage,canvas.width/2,shopBuyLivesButtonRect.y+buttonHeight+20*scaleFactorHeight);}
-                 if(shopBackButtonRect){ctx.fillStyle="#A00000";ctx.strokeStyle="#640000";ctx.lineWidth=2*scaleFactorHeight;ctx.fillRect(shopBackButtonRect.x,shopBackButtonRect.y,shopBackButtonRect.width,shopBackButtonRect.height);ctx.strokeRect(shopBackButtonRect.x,shopBackButtonRect.y,shopBackButtonRect.width,shopBackButtonRect.height);ctx.fillStyle="#FFFFFF";ctx.font=`bold ${20*scaleFactorHeight}px Arial`;ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText("Voltar",shopBackButtonRect.x+shopBackButtonRect.width/2,shopBackButtonRect.y+shopBackButtonRect.height/2);ctx.textBaseline="alphabetic";}
-
-            } // Fim do gameState 'SHOP'
-
-            else if (gameState === 'PLAYING') {
-                 if(obstacleImageLoaded){for(let o of obstacles){ctx.drawImage(o.image,o.x,o.y,o.width,o.height);}}let dP=!isInvincible||Math.floor(Date.now()/100)%2===0;if(dP&&playerImageLoaded){ctx.drawImage(playerImage,playerX,playerY,playerWidth,playerHeight);}
-                 const uy=25*scaleFactorHeight,ux=10*scaleFactorWidth,sp=10*scaleFactorWidth;ctx.fillStyle="#000000";ctx.font=`${20*scaleFactorHeight}px Arial`;ctx.textAlign="left";let cX=ux;ctx.fillText(`Score: ${score}`,cX,uy);cX+=ctx.measureText(`Score: ${score}`).width+sp*2;if(coinImageLoaded){ctx.drawImage(coinImage,cX,uy-iconSize*0.8,iconSize,iconSize);cX+=iconSize+sp;}ctx.fillText(`${coins}`,cX,uy);cX+=ctx.measureText(`${coins}`).width+sp*2;if(lifeImageLoaded){for(let i=0;i<currentLives;i++){ctx.drawImage(lifeImage,cX+i*(iconSize+sp*0.5),uy-iconSize*0.8,iconSize,iconSize);}} // Atenção: aqui estava uy também, corrigido para uiY no pensamento mas talvez não na última resposta? Vamos usar uiY aqui por consistência.
-                 // <<< CORREÇÃO: Usando uiY consistentemente >>>
-                 const uiY_play=25*scaleFactorHeight,ux_play=10*scaleFactorWidth,sp_play=10*scaleFactorWidth;ctx.fillStyle="#000000";ctx.font=`${20*scaleFactorHeight}px Arial`;ctx.textAlign="left";let cX_play=ux_play;ctx.fillText(`Score: ${score}`,cX_play,uiY_play);cX_play+=ctx.measureText(`Score: ${score}`).width+sp_play*2;if(coinImageLoaded){ctx.drawImage(coinImage,cX_play,uiY_play-iconSize*0.8,iconSize,iconSize);cX_play+=iconSize+sp_play;}ctx.fillText(`${coins}`,cX_play,uiY_play);cX_play+=ctx.measureText(`${coins}`).width+sp_play*2;if(lifeImageLoaded){for(let i=0;i<currentLives;i++){ctx.drawImage(lifeImage,cX_play+i*(iconSize+sp_play*0.5),uiY_play-iconSize*0.8,iconSize,iconSize);}}}
-
-            } // Fim do gameState 'PLAYING'
-
-            else if (gameState === 'GAME_OVER') {
-                if(obstacleImageLoaded){for(let o of obstacles){ctx.drawImage(o.image,o.x,o.y,o.width,o.height);}}if(playerImageLoaded){ctx.drawImage(playerImage,playerX,playerY,playerWidth,playerHeight);}
-                ctx.fillStyle="rgba(0,0,0,0.7)";ctx.fillRect(0,0,canvas.width,canvas.height);ctx.fillStyle="#ffffff";let fgo=40*scaleFactorHeight,fsc=20*scaleFactorHeight,fr=16*scaleFactorHeight;ctx.font=`${fgo}px Arial`;ctx.textAlign="center";ctx.fillText("Game Over",canvas.width/2,canvas.height/2-fgo);ctx.font=`${fsc}px Arial`;ctx.fillText(`Score Final: ${score}`,canvas.width/2,canvas.height/2);ctx.font=`${fr}px Arial`;ctx.fillText("Pressione ESPAÇO para Voltar ao Menu",canvas.width/2,canvas.height/2+fsc*1.5);
-
-            } // Fim do gameState 'GAME_OVER'
+            } else if (gameState === 'GAME_OVER') {
+                 try { // Try para Game Over
+                    // Jogo no fundo
+                    if(obstacleImageLoaded){for(let o of obstacles){ctx.drawImage(o.image,o.x,o.y,o.width,o.height);}}if(playerImageLoaded){ctx.drawImage(playerImage,playerX,playerY,playerWidth,playerHeight);}
+                    // Overlay e Texto
+                    ctx.fillStyle="rgba(0,0,0,0.7)";ctx.fillRect(0,0,canvas.width,canvas.height);ctx.fillStyle="#ffffff";let fgo=40*scaleFactorHeight,fsc=20*scaleFactorHeight,fr=16*scaleFactorHeight;ctx.font=`${fgo}px Arial`;ctx.textAlign="center";ctx.fillText("Game Over",canvas.width/2,canvas.height/2-fgo);ctx.font=`${fsc}px Arial`;ctx.fillText(`Score Final: ${score}`,canvas.width/2,canvas.height/2);ctx.font=`${fr}px Arial`;ctx.fillText("Pressione ESPAÇO para Voltar ao Menu",canvas.width/2,canvas.height/2+fsc*1.5);
+                 } catch(e) { console.error("Erro ao desenhar GAME_OVER:", e); }
+            }
         } // Fim draw
 
-        function gameLoop() { update(); draw(); animationFrameId = requestAnimationFrame(gameLoop); }
+        function gameLoop() {
+             try { // Try em volta do update e draw principais
+                 update();
+                 draw();
+                 animationFrameId = requestAnimationFrame(gameLoop);
+             } catch (e) {
+                 console.error("Erro fatal no game loop:", e);
+                 // Poderia parar o loop aqui se desejado: cancelAnimationFrame(animationFrameId);
+             }
+        }
 
         // --- Ouvintes de Evento ---
         document.addEventListener('keydown', (event) => { if (event.code === 'Space') { event.preventDefault(); handlePrimaryAction(); } });
