@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>Corre, Jonas, Corre! v4.3 (Vidas Individuais)</title>
+    <title>Corre, Jonas, Corre!</title>
     <link rel="icon" type="image/png" href="pedroaugusto.png">
     <link rel="apple-touch-icon" href="pedroaugusto.png">
 <style>
@@ -35,9 +35,7 @@
         let playerImageLoaded, obstacleImageLoaded, backgroundImageLoaded, coinImageLoaded, lifeImageLoaded = false;
 
         // --- Valores Base ---
-        const baseWidth=600;const baseHeight=300;const basePlayerWidth=40;const basePlayerHeight=40;const baseHitboxXOffset=5;const baseHitboxYOffset=5;const baseObstacleWidth=25;const baseObstacleHeight=45;const baseGravity=0.3;const baseJumpStrength=-9;const baseDoubleJumpStrength=-7;const baseGroundHeight=15;const baseObstacleSpeed=2.5;const baseIconSize=20;const baseButtonWidth=200;const baseButtonHeight=50;
-        const costOfSingleLife = 5; // <<< CUSTO DE 1 VIDA
-        const maxTotalLives = 10;  // <<< LIMITE MÁXIMO DE VIDAS
+        const baseWidth=600;const baseHeight=300;const basePlayerWidth=40;const basePlayerHeight=40;const baseHitboxXOffset=5;const baseHitboxYOffset=5;const baseObstacleWidth=25;const baseObstacleHeight=45;const baseGravity=0.3;const baseJumpStrength=-9;const baseDoubleJumpStrength=-7;const baseGroundHeight=15;const baseObstacleSpeed=2.5;const baseIconSize=20;const baseButtonWidth=200;const baseButtonHeight=50;const costOfSingleLife=5;const maxTotalLives=10;
 
         // --- Variáveis Dinâmicas ---
         let playerWidth, playerHeight, playerX, playerY, velocityY;
@@ -55,7 +53,7 @@
 
         // --- Estado do Jogo e Loja ---
         let gameState = 'LOADING';
-        let coins = 0; let purchasedExtraLives = 0; // Vidas extras ACIMA da primeira
+        let coins = 0; let purchasedExtraLives = 0;
         const startingLivesBase = 1; let currentLives = 0;
         let isInvincible = false; let invincibilityTimer = 0;
         const invincibilityDuration = 90;
@@ -70,30 +68,41 @@
         function loadData(){try{const sC=localStorage.getItem(COINS_KEY);const sL=localStorage.getItem(LIVES_KEY);coins=sC!==null?parseInt(sC,10):0;purchasedExtraLives=sL!==null?parseInt(sL,10):0;if(isNaN(coins))coins=0;if(isNaN(purchasedExtraLives))purchasedExtraLives=0;console.log("Dados carregados:",{coins,purchasedExtraLives});}catch(e){console.error("Erro load localStorage:",e);coins=0;purchasedExtraLives=0;}}
 
         // --- Função de Redimensionamento ---
-        function resizeAndScale() { /* ... (código igual à v4.2) ... */ canvas.width=window.innerWidth;canvas.height=window.innerHeight;scaleFactorHeight=canvas.height/baseHeight;scaleFactorWidth=canvas.width/baseWidth;playerHeight=basePlayerHeight*scaleFactorHeight;playerWidth=basePlayerWidth*scaleFactorHeight;obstacleDrawHeight=baseObstacleHeight*scaleFactorHeight;obstacleDrawWidth=baseObstacleWidth*scaleFactorHeight;hitboxXOffset=baseHitboxXOffset*scaleFactorHeight;hitboxYOffset=baseHitboxYOffset*scaleFactorHeight;playerHitboxWidth=playerWidth-(hitboxXOffset*2);playerHitboxHeight=playerHeight-(hitboxYOffset*2);iconSize=baseIconSize*scaleFactorHeight;buttonWidth=baseButtonWidth*scaleFactorWidth;buttonHeight=baseButtonHeight*scaleFactorHeight;playerX=50*scaleFactorWidth;groundY=canvas.height-(baseGroundHeight*scaleFactorHeight);gravity=baseGravity*scaleFactorHeight;jumpStrength=baseJumpStrength*scaleFactorHeight;doubleJumpStrength=baseDoubleJumpStrength*scaleFactorHeight;obstacleSpeed=baseObstacleSpeed*scaleFactorWidth;aerialObstacleMinY=groundY-obstacleDrawHeight-playerHeight*1.8;aerialObstacleMaxY=groundY-obstacleDrawHeight-playerHeight*1.1;const bs=buttonHeight*0.5;const sby=canvas.height/2-buttonHeight-bs/2;const shy=canvas.height/2+bs/2;startButtonRect={x:canvas.width/2-buttonWidth/2,y:sby,width:buttonWidth,height:buttonHeight};shopButtonRect={x:canvas.width/2-buttonWidth/2,y:shy,width:buttonWidth,height:buttonHeight};const bm=20*scaleFactorWidth;shopBackButtonRect={x:canvas.width-buttonWidth*0.8-bm,y:canvas.height-buttonHeight*0.8-bm,width:buttonWidth*0.8,height:buttonHeight*0.8};const buyY=150*scaleFactorHeight+(35*scaleFactorHeight);shopBuyLivesButtonRect={x:canvas.width/2-buttonWidth/2,y:buyY,width:buttonWidth,height:buttonHeight};if(gameState!=='LOADING'){draw();}}
+        function resizeAndScale() {
+            canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+            scaleFactorHeight = canvas.height / baseHeight; scaleFactorWidth = canvas.width / baseWidth;
+            // Escalonar Dimensões
+            playerHeight=basePlayerHeight*scaleFactorHeight; playerWidth=basePlayerWidth*scaleFactorHeight; obstacleDrawHeight=baseObstacleHeight*scaleFactorHeight; obstacleDrawWidth=baseObstacleWidth*scaleFactorHeight; hitboxXOffset=baseHitboxXOffset*scaleFactorHeight; hitboxYOffset=baseHitboxYOffset*scaleFactorHeight; playerHitboxWidth=playerWidth-(hitboxXOffset*2); playerHitboxHeight=playerHeight-(hitboxYOffset*2); iconSize=baseIconSize*scaleFactorHeight; buttonWidth=baseButtonWidth*scaleFactorWidth; buttonHeight=baseButtonHeight*scaleFactorHeight;
+            // Escalonar Posições e Física
+            playerX=50*scaleFactorWidth; groundY=canvas.height-(baseGroundHeight*scaleFactorHeight); gravity=baseGravity*scaleFactorHeight; jumpStrength=baseJumpStrength*scaleFactorHeight; doubleJumpStrength=baseDoubleJumpStrength*scaleFactorHeight; obstacleSpeed=baseObstacleSpeed*scaleFactorWidth; aerialObstacleMinY=groundY-obstacleDrawHeight-playerHeight*1.8; aerialObstacleMaxY=groundY-obstacleDrawHeight-playerHeight*1.1;
+            // Calcular botões
+            const bs=buttonHeight*0.5;const sby=canvas.height/2-buttonHeight-bs/2;const shy=canvas.height/2+bs/2;startButtonRect={x:canvas.width/2-buttonWidth/2,y:sby,width:buttonWidth,height:buttonHeight};shopButtonRect={x:canvas.width/2-buttonWidth/2,y:shy,width:buttonWidth,height:buttonHeight};const bm=20*scaleFactorWidth;const bw=buttonWidth*0.8;const bh=buttonHeight*0.8;shopBackButtonRect={x:canvas.width-bw-bm,y:canvas.height-bh-bm,width:bw,height:bh};const buyY=(100+35+40)*scaleFactorHeight;shopBuyLivesButtonRect={x:canvas.width/2-buttonWidth/2,y:buyY,width:buttonWidth,height:buttonHeight};
+
+            // Removido debug log dos botões daqui para limpar o console
+            if (gameState !== 'LOADING') { draw(); }
+        }
 
         // --- Carregamento ---
         function onAllAssetsLoaded() { loadData(); gameState = 'MENU'; resizeAndScale(); gameLoop(); }
         function assetLoaded() { assetsLoaded++; if (assetsLoaded === totalAssets) { onAllAssetsLoaded(); } }
-        // Handlers onload/onerror (iguais)
         playerImage.onload=()=>{playerImageLoaded=true;assetLoaded();};playerImage.onerror=()=>{console.error("Erro 'images.png'.");};obstacleImage.onload=()=>{obstacleImageLoaded=true;assetLoaded();};obstacleImage.onerror=()=>{console.error("Erro 'pedroaugusto.png'.");};backgroundImage.onload=()=>{backgroundImageLoaded=true;assetLoaded();};backgroundImage.onerror=()=>{console.error("Erro 'fundo.png'.");};coinImage.onload=()=>{coinImageLoaded=true;assetLoaded();};coinImage.onerror=()=>{console.error("Erro 'coin.png'.");};lifeImage.onload=()=>{lifeImageLoaded=true;assetLoaded();};lifeImage.onerror=()=>{console.error("Erro 'vida.png'.");};
 
         // --- Ação Principal (Pulo/Voltar Menu) ---
-        function handlePrimaryAction() { /* ... (código igual) ... */ switch(gameState){case'PLAYING':if(onGround){jumpSound.currentTime=0;jumpSound.play();velocityY=jumpStrength;onGround=false;canDoubleJump=true;}else if(canDoubleJump){jumpSound.currentTime=0;jumpSound.play();velocityY=doubleJumpStrength;canDoubleJump=false;}break;case'GAME_OVER':isGameOver=false;gameState='MENU';break;} }
+        function handlePrimaryAction() { switch(gameState){case'PLAYING':if(onGround){jumpSound.currentTime=0;jumpSound.play();velocityY=jumpStrength;onGround=false;canDoubleJump=true;}else if(canDoubleJump){jumpSound.currentTime=0;jumpSound.play();velocityY=doubleJumpStrength;canDoubleJump=false;}break;case'GAME_OVER':isGameOver=false;gameState='MENU';break;}}
 
         // --- Funções do Jogo ---
-        function resetGame(){ /* ... (usa purchasedExtraLives) ... */ if(!animationFrameId&&gameState==='PLAYING'){gameLoop();}playerY=groundY-playerHeight;velocityY=0;obstacles=[];score=0;obstacleSpawnTimer=0;nextSpawnInterval=120;isGameOver=false;onGround=true;canDoubleJump=false;currentLives=startingLivesBase+purchasedExtraLives;isInvincible=false;invincibilityTimer=0;console.log(`Jogo iniciado com ${currentLives} vidas`);}
-        function spawnObstacle(){ /* ... (igual) ... */ let oY,t;if(Math.random()<0.5){t='ground';oY=groundY-obstacleDrawHeight;}else{t='air';oY=Math.random()*(aerialObstacleMaxY-aerialObstacleMinY)+aerialObstacleMinY;}obstacles.push({x:canvas.width,y:oY,width:obstacleDrawWidth,height:obstacleDrawHeight,image:obstacleImage,type:t,scored:false});nextSpawnInterval=Math.floor(Math.random()*(maxSpawnInterval-minSpawnInterval+1))+minSpawnInterval;}
-        function update(){ /* ... (atualiza coins e salva) ... */ if(gameState!=='PLAYING'){if(isGameOver&&gameState!=='GAME_OVER')gameState='GAME_OVER';return;}if(isInvincible){invincibilityTimer--;if(invincibilityTimer<=0){isInvincible=false;}}if(!onGround){velocityY+=gravity;playerY+=velocityY;}if(playerY+playerHeight>=groundY){playerY=groundY-playerHeight;velocityY=0;if(!onGround){onGround=true;canDoubleJump=false;}}if(playerY<0){playerY=0;velocityY=0;}obstacleSpawnTimer++;if(obstacleSpawnTimer>=nextSpawnInterval){spawnObstacle();obstacleSpawnTimer=0;}for(let i=obstacles.length-1;i>=0;i--){let o=obstacles[i];o.x-=obstacleSpeed;if(o.x+o.width<0){obstacles.splice(i,1);continue;}let pX=playerX+hitboxXOffset;let pY=playerY+hitboxYOffset;if(!isInvincible&&pX<o.x+o.width&&pX+playerHitboxWidth>o.x&&pY<o.y+o.height&&pY+playerHitboxHeight>o.y){currentLives--;obstacles.splice(i,1);if(currentLives<=0){isGameOver=true;gameState='GAME_OVER';gameOverSound.currentTime=0;gameOverSound.play();return;}else{isInvincible=true;invincibilityTimer=invincibilityDuration;}}if(o.x+o.width<playerX&&!o.scored){score++;o.scored=true;if(score>0&&score%5===0){coins++;saveData();console.log("Coin Ganha! Total:",coins);}}}}
+        function resetGame(){if(!animationFrameId&&gameState==='PLAYING'){gameLoop();}playerY=groundY-playerHeight;velocityY=0;obstacles=[];score=0;obstacleSpawnTimer=0;nextSpawnInterval=120;isGameOver=false;onGround=true;canDoubleJump=false;currentLives=startingLivesBase+purchasedExtraLives;isInvincible=false;invincibilityTimer=0;console.log(`Jogo iniciado com ${currentLives} vidas`);}
+        function spawnObstacle(){let oY,t;if(Math.random()<0.5){t='ground';oY=groundY-obstacleDrawHeight;}else{t='air';oY=Math.random()*(aerialObstacleMaxY-aerialObstacleMinY)+aerialObstacleMinY;}obstacles.push({x:canvas.width,y:oY,width:obstacleDrawWidth,height:obstacleDrawHeight,image:obstacleImage,type:t,scored:false});nextSpawnInterval=Math.floor(Math.random()*(maxSpawnInterval-minSpawnInterval+1))+minSpawnInterval;}
+        function update(){if(gameState!=='PLAYING'){if(isGameOver&&gameState!=='GAME_OVER')gameState='GAME_OVER';return;}if(isInvincible){invincibilityTimer--;if(invincibilityTimer<=0){isInvincible=false;}}if(!onGround){velocityY+=gravity;playerY+=velocityY;}if(playerY+playerHeight>=groundY){playerY=groundY-playerHeight;velocityY=0;if(!onGround){onGround=true;canDoubleJump=false;}}if(playerY<0){playerY=0;velocityY=0;}obstacleSpawnTimer++;if(obstacleSpawnTimer>=nextSpawnInterval){spawnObstacle();obstacleSpawnTimer=0;}for(let i=obstacles.length-1;i>=0;i--){let o=obstacles[i];o.x-=obstacleSpeed;if(o.x+o.width<0){obstacles.splice(i,1);continue;}let pX=playerX+hitboxXOffset;let pY=playerY+hitboxYOffset;if(!isInvincible&&pX<o.x+o.width&&pX+playerHitboxWidth>o.x&&pY<o.y+o.height&&pY+playerHitboxHeight>o.y){currentLives--;obstacles.splice(i,1);if(currentLives<=0){isGameOver=true;gameState='GAME_OVER';gameOverSound.currentTime=0;gameOverSound.play();return;}else{isInvincible=true;invincibilityTimer=invincibilityDuration;}}if(o.x+o.width<playerX&&!o.scored){score++;o.scored=true;if(score>0&&score%5===0){coins++;saveData();}}}}
 
-        // <<< DRAW ATUALIZADA (LOJA E UI DE VIDAS) >>>
+        // <<< DRAW CORRIGIDA >>>
         function draw() {
-            // 1. Fundo
+            // Fundo
             if(backgroundImageLoaded){ctx.drawImage(backgroundImage,0,0,canvas.width,canvas.height);}else{ctx.fillStyle=skyColor;ctx.fillRect(0,0,canvas.width,canvas.height);}
 
-            // 2. Desenho por Estado
+            // Desenho por Estado
             if (gameState === 'MENU') {
-                 // Decorações, Botões, Moedas (igual v4.2)
+                // Decorações, Botões, Moedas
                  if(obstacleImageLoaded){const d=1.2,w=obstacleDrawWidth*d,h=obstacleDrawHeight*d,s=h*1.2,y=(canvas.height-(3*h+2*(s-h)))/2,m=15*scaleFactorWidth,l=m,r=canvas.width-w-m;ctx.drawImage(obstacleImage,l,y,w,h);ctx.drawImage(obstacleImage,l,y+s,w,h);ctx.drawImage(obstacleImage,l,y+s*2,w,h);ctx.drawImage(obstacleImage,r,y,w,h);ctx.drawImage(obstacleImage,r,y+s,w,h);ctx.drawImage(obstacleImage,r,y+s*2,w,h);}
                  ctx.fillStyle="#00A000";ctx.strokeStyle="#006400";ctx.lineWidth=2*scaleFactorHeight;if(startButtonRect){ctx.fillRect(startButtonRect.x,startButtonRect.y,startButtonRect.width,startButtonRect.height);ctx.strokeRect(startButtonRect.x,startButtonRect.y,startButtonRect.width,startButtonRect.height);}if(shopButtonRect){ctx.fillRect(shopButtonRect.x,shopButtonRect.y,shopButtonRect.width,shopButtonRect.height);ctx.strokeRect(shopButtonRect.x,shopButtonRect.y,shopButtonRect.width,shopButtonRect.height);}
                  let fb=25*scaleFactorHeight;ctx.fillStyle="#FFFFFF";ctx.font=`bold ${fb}px Arial`;ctx.textAlign="center";ctx.textBaseline="middle";if(startButtonRect)ctx.fillText("Iniciar Jogo",startButtonRect.x+startButtonRect.width/2,startButtonRect.y+startButtonRect.height/2);if(shopButtonRect)ctx.fillText("Loja",shopButtonRect.x+shopButtonRect.width/2,shopButtonRect.y+shopButtonRect.height/2);ctx.textBaseline="alphabetic";
@@ -101,54 +110,39 @@
 
             } else if (gameState === 'SHOP') {
                  // Moedas na Loja
-                 const uiY=25*scaleFactorHeight,ux=10*scaleFactorWidth,sp=10*scaleFactorWidth;let cX=ux;if(coinImageLoaded){ctx.drawImage(coinImage,cX,uiY-iconSize*0.8,iconSize,iconSize);cX+=iconSize+sp;}ctx.fillStyle="#FFFFFF";ctx.strokeStyle="#000000";ctx.lineWidth=1;ctx.font=`${20*scaleFactorHeight}px Arial`;ctx.textAlign="left";ctx.strokeText(`${coins}`,cX,uy);ctx.fillText(`${coins}`,cX,uy);
+                 const uiY=25*scaleFactorHeight,ux=10*scaleFactorWidth,sp=10*scaleFactorWidth;let cX=ux;
+                 if(coinImageLoaded){ctx.drawImage(coinImage,cX,uiY-iconSize*0.8,iconSize,iconSize);cX+=iconSize+sp;}
+                 ctx.fillStyle="#FFFFFF";ctx.strokeStyle="#000000";ctx.lineWidth=1;ctx.font=`${20*scaleFactorHeight}px Arial`;ctx.textAlign="left";
+                 // <<< CORRIGIDO AQUI: usa uiY >>>
+                 ctx.strokeText(`${coins}`, cX, uiY);
+                 ctx.fillText(`${coins}`, cX, uiY);
 
-                 // <<< TEXTO DO ITEM ATUALIZADO >>>
+                 // Itens da Loja
                  let itemY = 100 * scaleFactorHeight;
                  ctx.fillStyle = "#FFFFFF"; ctx.textAlign = "center";
                  ctx.font = `bold ${25 * scaleFactorHeight}px Arial`;
-                 ctx.strokeText("Comprar 1 Vida Extra", canvas.width / 2, itemY);
-                 ctx.fillText("Comprar 1 Vida Extra", canvas.width / 2, itemY);
+                 ctx.strokeText("Comprar 1 Vida Extra", canvas.width / 2, itemY); ctx.fillText("Comprar 1 Vida Extra", canvas.width / 2, itemY);
                  itemY += 35 * scaleFactorHeight;
                  ctx.font = `${20 * scaleFactorHeight}px Arial`;
-                 ctx.strokeText(`Custo: ${costOfSingleLife} Moedas`, canvas.width / 2, itemY); // Usa nova constante
-                 ctx.fillText(`Custo: ${costOfSingleLife} Moedas`, canvas.width / 2, itemY);
+                 ctx.strokeText(`Custo: ${costOfSingleLife} Moedas`, canvas.width / 2, itemY); ctx.fillText(`Custo: ${costOfSingleLife} Moedas`, canvas.width / 2, itemY);
 
-                 // Botão Comprar (desenho igual)
+                 // Botão Comprar
                  if(shopBuyLivesButtonRect){ctx.fillStyle="#00A000";ctx.strokeStyle="#006400";ctx.lineWidth=2*scaleFactorHeight;ctx.fillRect(shopBuyLivesButtonRect.x,shopBuyLivesButtonRect.y,shopBuyLivesButtonRect.width,shopBuyLivesButtonRect.height);ctx.strokeRect(shopBuyLivesButtonRect.x,shopBuyLivesButtonRect.y,shopBuyLivesButtonRect.width,shopBuyLivesButtonRect.height);ctx.fillStyle="#FFFFFF";ctx.font=`bold ${20*scaleFactorHeight}px Arial`;ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText("Comprar",shopBuyLivesButtonRect.x+shopBuyLivesButtonRect.width/2,shopBuyLivesButtonRect.y+shopBuyLivesButtonRect.height/2);ctx.textBaseline="alphabetic";}
 
-                 // Mensagem da Loja (igual)
+                 // Mensagem da Loja
                  if(shopMessageTimer>0){shopMessageTimer--;ctx.fillStyle=(shopMessage.includes("sucesso"))?"#00FF00":"#FF0000";ctx.font=`bold ${18*scaleFactorHeight}px Arial`;ctx.textAlign="center";ctx.fillText(shopMessage,canvas.width/2,shopBuyLivesButtonRect.y+buttonHeight+20*scaleFactorHeight);}
 
-                 // Botão Voltar (igual)
+                 // Botão Voltar
                  if(shopBackButtonRect){ctx.fillStyle="#A00000";ctx.strokeStyle="#640000";ctx.lineWidth=2*scaleFactorHeight;ctx.fillRect(shopBackButtonRect.x,shopBackButtonRect.y,shopBackButtonRect.width,shopBackButtonRect.height);ctx.strokeRect(shopBackButtonRect.x,shopBackButtonRect.y,shopBackButtonRect.width,shopBackButtonRect.height);ctx.fillStyle="#FFFFFF";ctx.font=`bold ${20*scaleFactorHeight}px Arial`;ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText("Voltar",shopBackButtonRect.x+shopBackButtonRect.width/2,shopBackButtonRect.y+shopBackButtonRect.height/2);ctx.textBaseline="alphabetic";}
 
 
             } else if (gameState === 'PLAYING') {
-                 // Desenha Jogo Normal
+                 // Desenha Jogo Normal (Obstáculos, Jogador, UI de Vidas/Moedas/Score)
                  if(obstacleImageLoaded){for(let o of obstacles){ctx.drawImage(o.image,o.x,o.y,o.width,o.height);}}let dP=!isInvincible||Math.floor(Date.now()/100)%2===0;if(dP&&playerImageLoaded){ctx.drawImage(playerImage,playerX,playerY,playerWidth,playerHeight);}
-
-                 // <<< UI ATUALIZADA PARA MÚLTIPLAS VIDAS >>>
-                 const uiY=25*scaleFactorHeight;const ux=10*scaleFactorWidth;const sp=10*scaleFactorWidth;
-                 ctx.fillStyle = "#000000"; ctx.font = `${20 * scaleFactorHeight}px Arial`; ctx.textAlign = "left";
-                 let currentX = ux;
-                 // Score
-                 ctx.fillText(`Score: ${score}`, currentX, uiY);
-                 currentX += ctx.measureText(`Score: ${score}`).width + sp * 2;
-                 // Moedas
-                 if (coinImageLoaded) { ctx.drawImage(coinImage, currentX, uiY - iconSize * 0.8, iconSize, iconSize); currentX += iconSize + sp; }
-                 ctx.fillText(`${coins}`, currentX, uiY);
-                 currentX += ctx.measureText(`${coins}`).width + sp * 2;
-                 // Vidas (Múltiplos Ícones)
-                 if (lifeImageLoaded) {
-                     for (let i = 0; i < currentLives; i++) {
-                         ctx.drawImage(lifeImage, currentX + i * (iconSize + sp * 0.5), uiY - iconSize * 0.8, iconSize, iconSize);
-                     }
-                 }
-                 // Fim da UI
+                 const uiY=25*scaleFactorHeight,ux=10*scaleFactorWidth,sp=10*scaleFactorWidth;ctx.fillStyle="#000000";ctx.font=`${20*scaleFactorHeight}px Arial`;ctx.textAlign="left";let cX=ux;ctx.fillText(`Score: ${score}`,cX,uiY);cX+=ctx.measureText(`Score: ${score}`).width+sp*2;if(coinImageLoaded){ctx.drawImage(coinImage,cX,uiY-iconSize*0.8,iconSize,iconSize);cX+=iconSize+sp;}ctx.fillText(`${coins}`,cX,uiY);cX+=ctx.measureText(`${coins}`).width+sp*2;if(lifeImageLoaded){for(let i=0;i<currentLives;i++){ctx.drawImage(lifeImage,cX+i*(iconSize+sp*0.5),uiY-iconSize*0.8,iconSize,iconSize);}}}
 
             } else if (gameState === 'GAME_OVER') {
-                // Desenha Jogo Normal (estado final) + Overlay e Texto Game Over
+                // Desenha Jogo + Overlay Game Over
                 if(obstacleImageLoaded){for(let o of obstacles){ctx.drawImage(o.image,o.x,o.y,o.width,o.height);}}if(playerImageLoaded){ctx.drawImage(playerImage,playerX,playerY,playerWidth,playerHeight);}
                 ctx.fillStyle="rgba(0,0,0,0.7)";ctx.fillRect(0,0,canvas.width,canvas.height);ctx.fillStyle="#ffffff";let fgo=40*scaleFactorHeight,fsc=20*scaleFactorHeight,fr=16*scaleFactorHeight;ctx.font=`${fgo}px Arial`;ctx.textAlign="center";ctx.fillText("Game Over",canvas.width/2,canvas.height/2-fgo);ctx.font=`${fsc}px Arial`;ctx.fillText(`Score Final: ${score}`,canvas.width/2,canvas.height/2);ctx.font=`${fr}px Arial`;ctx.fillText("Pressione ESPAÇO para Voltar ao Menu",canvas.width/2,canvas.height/2+fsc*1.5);
             }
@@ -162,7 +156,7 @@
         canvas.addEventListener('click', handleMouseClick);
         canvas.addEventListener('touchstart', (event) => { event.preventDefault(); handleMouseClick(event.touches[0]); });
 
-        // <<< MOUSE CLICK HANDLER ATUALIZADO PARA COMPRA >>>
+        // <<< MOUSE CLICK HANDLER >>>
         function handleMouseClick(event) {
              const rect = canvas.getBoundingClientRect();
              const clickX = (event.clientX || event.pageX) - rect.left;
@@ -172,27 +166,13 @@
                  if(startButtonRect&&clickX>=startButtonRect.x&&clickX<=startButtonRect.x+startButtonRect.width&&clickY>=startButtonRect.y&&clickY<=startButtonRect.y+startButtonRect.height){gameState='PLAYING';resetGame();}
                  else if(shopButtonRect&&clickX>=shopButtonRect.x&&clickX<=shopButtonRect.x+shopButtonRect.width&&clickY>=shopButtonRect.y&&clickY<=shopButtonRect.y+shopButtonRect.height){gameState='SHOP';shopMessage="";shopMessageTimer=0;}
              } else if (gameState === 'SHOP') {
-                  // Botão Voltar
+                 // Botão Voltar
                  if(shopBackButtonRect&&clickX>=shopBackButtonRect.x&&clickX<=shopBackButtonRect.x+shopBackButtonRect.width&&clickY>=shopBackButtonRect.y&&clickY<=shopBackButtonRect.y+shopBackButtonRect.height){gameState='MENU';}
                  // Botão Comprar Vidas
                  else if(shopBuyLivesButtonRect&&clickX>=shopBuyLivesButtonRect.x&&clickX<=shopBuyLivesButtonRect.x+shopBuyLivesButtonRect.width&&clickY>=shopBuyLivesButtonRect.y&&clickY<=shopBuyLivesButtonRect.y+shopBuyLivesButtonRect.height){
-                     // <<< LÓGICA DE COMPRA ATUALIZADA >>>
-                     if (startingLivesBase + purchasedExtraLives >= maxTotalLives) {
-                         shopMessage = "Máximo de vidas atingido!";
-                         shopMessageTimer = 120;
-                         console.log("Máximo de vidas.");
-                     } else if (coins >= costOfSingleLife) { // Usa costOfSingleLife
-                         coins -= costOfSingleLife;
-                         purchasedExtraLives += 1; // Adiciona apenas 1 vida extra
-                         saveData();
-                         shopMessage = "Compra realizada com sucesso!";
-                         shopMessageTimer = 120;
-                         console.log("1 Vida comprada! Extras:", purchasedExtraLives, "Moedas:", coins);
-                     } else {
-                         shopMessage = "Moedas insuficientes!";
-                         shopMessageTimer = 120;
-                         console.log("Moedas insuficientes.");
-                     }
+                     if(startingLivesBase+purchasedExtraLives>=maxTotalLives){shopMessage="Máximo de vidas atingido!";shopMessageTimer=120;}
+                     else if(coins>=costOfSingleLife){coins-=costOfSingleLife;purchasedExtraLives+=1;saveData();shopMessage="Compra realizada com sucesso!";shopMessageTimer=120;}
+                     else{shopMessage="Moedas insuficientes!";shopMessageTimer=120;}
                  }
              } else if (gameState === 'PLAYING') { // Pular com toque/clique
                   if(onGround){jumpSound.currentTime=0;jumpSound.play();velocityY=jumpStrength;onGround=false;canDoubleJump=true;}
