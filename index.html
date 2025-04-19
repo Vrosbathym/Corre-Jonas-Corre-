@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>Corre, Jonas, Corre! v5.1 (Menu Final)</title> <link rel="icon" type="image/png" href="pedroaugusto.png">
+    <title>Corre, Jonas, Corre! v5.7 (Imagem Game Over)</title>
+    <link rel="icon" type="image/png" href="pedroaugusto.png">
     <link rel="apple-touch-icon" href="pedroaugusto.png">
 <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -15,151 +16,125 @@
 <body>
 
 <canvas id="gameCanvas"></canvas>
-<p>Use Toque/Clique no menu/loja/líderes. Pressione ESPAÇO ou Toque para pular. Pressione ESPAÇO na tela de Game Over para voltar ao menu.</p>
+<p>Use Toque/Clique no menu/loja/líderes. Pressione ESPAÇO ou Toque para pular. Pressione ESPAÇO ou Toque na tela de Game Over para voltar ao menu.</p>
 
 <script>
-    // <<< INÍCIO DO SCRIPT (COPIAR DAQUI) >>>
     document.addEventListener('DOMContentLoaded', () => {
 
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
-        if (!canvas || !ctx) { console.error("Canvas ou Contexto não encontrado!"); return; }
+        if (!canvas || !ctx) { console.error("Canvas/Contexto não encontrado!"); return; }
 
         // Assets
-        let playerImage=new Image(); let obstacleImage=new Image(); let backgroundImage=new Image(); let coinImage=new Image(); let lifeImage=new Image(); let jumpSound=new Audio('uoh.mp3'); let gameOverSound=new Audio('fail.mp3'); let assetsLoaded=0; const totalAssets=5; let playerImageLoaded, obstacleImageLoaded, backgroundImageLoaded, coinImageLoaded, lifeImageLoaded = false;
+        let playerImage=new Image(); let obstacleImage=new Image(); let backgroundImage=new Image();
+        let coinImage=new Image(); let lifeImage=new Image();
+        let gameOverImage = new Image(); // <<< NOVA IMAGEM
+        let jumpSound=new Audio('uoh.mp3'); let gameOverSound=new Audio('fail.mp3');
+        let assetsLoaded=0;
+        const totalAssets = 6; // <<< TOTAL AGORA É 6
+        let playerImageLoaded, obstacleImageLoaded, backgroundImageLoaded, coinImageLoaded, lifeImageLoaded, gameOverImageLoaded = false; // <<< NOVA FLAG
 
-        // Valores Base
+        // Valores Base (igual)
         const baseWidth=600;const baseHeight=300;const basePlayerWidth=40;const basePlayerHeight=40;const baseHitboxXOffset=6;const baseHitboxYOffset=6; const baseObstacleWidth=25;const baseObstacleHeight=35; const baseGravity=0.3;const baseJumpStrength=-9;const baseDoubleJumpStrength=-7;const baseGroundHeight=15;const baseObstacleSpeed=4.0; const baseIconSize=20;const baseButtonWidth=200;const baseButtonHeight=45;const costOfSingleLife=5;const maxTotalLives=10;
 
-        // Variáveis Dinâmicas
+        // Variáveis Dinâmicas (igual)
         let playerWidth,playerHeight,playerX,playerY,velocityY;let hitboxXOffset,hitboxYOffset,playerHitboxWidth,playerHitboxHeight;let gravity,jumpStrength,doubleJumpStrength,onGround,canDoubleJump;let groundY;let obstacles=[],obstacleDrawWidth,obstacleDrawHeight; let obstacleSpawnTimer=0,nextSpawnInterval=120;const minSpawnInterval=70,maxSpawnInterval=150;let aerialObstacleMinY,aerialObstacleMaxY;let score=0,isGameOver=false,animationFrameId=null;let scaleFactorHeight=1,scaleFactorWidth=1;const skyColor="#87CEEB";let iconSize,buttonWidth,buttonHeight;
 
-        // Estado e Loja
+        // Estado e Loja (igual)
         let gameState='LOADING';let coins=0;let purchasedExtraLives=0;const startingLivesBase=1;let currentLives=0;let isInvincible=false;let invincibilityTimer=0;const invincibilityDuration=90;let shopMessage="";let shopMessageTimer=0;
 
-        // Leaderboard
+        // Leaderboard (igual)
         let leaderboardData=[];const LEADERBOARD_KEY="scorpionRunnerLeaderboard";const MAX_LEADERBOARD_ENTRIES=5;
 
-        // Botões
+        // Botões (igual)
         let startButtonRect, shopButtonRect, leaderboardButtonRect, shopBackButtonRect, shopBuyLivesButtonRect, leaderboardBackButtonRect = null;
 
-        // <<< TÍTULO ANIMADO (VARIÁVEIS) >>>
-        const titleColors = ['#00FF00', '#FFA500', '#FFFF00', '#00BFFF']; // Verde, Laranja, Amarelo, Azul Céu
-        let titleColorIndex = 0;
-        let titleColorTimer = 0;
-        const titleColorInterval = 20; // Mudar cor a cada 20 frames
-        const gameTitle = "CORRE, JONAS, CORRE!";
+        // Título Animado (igual)
+        const titleColors=['#00FF00','#FFA500','#FFFF00','#00BFFF'];let titleColorIndex=0;let titleColorTimer=0;const titleColorInterval=20;const gameTitle="CORRE, JONAS, CORRE!";
 
-        // Persistência
-        const COINS_KEY="scorpionRunnerCoins";const LIVES_KEY="scorpionRunnerExtraLives";function saveData(){try{localStorage.setItem(COINS_KEY,coins.toString());localStorage.setItem(LIVES_KEY,purchasedExtraLives.toString());localStorage.setItem(LEADERBOARD_KEY,JSON.stringify(leaderboardData));}catch(e){console.error("Erro save localStorage:",e);}}function loadData(){try{const sC=localStorage.getItem(COINS_KEY);const sL=localStorage.getItem(LIVES_KEY);const sLB=localStorage.getItem(LEADERBOARD_KEY);coins=sC!==null?parseInt(sC,10):0;purchasedExtraLives=sL!==null?parseInt(sL,10):0;if(sLB){leaderboardData=JSON.parse(sLB);}else{leaderboardData=[];}if(isNaN(coins))coins=0;if(isNaN(purchasedExtraLives))purchasedExtraLives=0;if(!Array.isArray(leaderboardData))leaderboardData=[];sortLeaderboard();}catch(e){console.error("Erro load localStorage:",e);coins=0;purchasedExtraLives=0;leaderboardData=[];}}
+        // Persistência (igual)
+        const COINS_KEY="scorpionRunnerCoins";const LIVES_KEY="scorpionRunnerExtraLives";function saveData(){try{localStorage.setItem(COINS_KEY,coins.toString());localStorage.setItem(LIVES_KEY,purchasedExtraLives.toString());localStorage.setItem(LEADERBOARD_KEY,JSON.stringify(leaderboardData));}catch(e){}}function loadData(){try{const sC=localStorage.getItem(COINS_KEY);const sL=localStorage.getItem(LIVES_KEY);const sLB=localStorage.getItem(LEADERBOARD_KEY);coins=sC!==null?parseInt(sC,10):0;purchasedExtraLives=sL!==null?parseInt(sL,10):0;if(sLB){leaderboardData=JSON.parse(sLB);}else{leaderboardData=[];}if(isNaN(coins))coins=0;if(isNaN(purchasedExtraLives))purchasedExtraLives=0;if(!Array.isArray(leaderboardData))leaderboardData=[];sortLeaderboard();}catch(e){coins=0;purchasedExtraLives=0;leaderboardData=[];}}
 
-        // Funções Leaderboard
+        // Funções Leaderboard (igual)
         function sortLeaderboard(){leaderboardData.sort((a,b)=>b.score-a.score);}function addScoreToLeaderboard(name,score){leaderboardData.push({name:name,score:score});sortLeaderboard();leaderboardData.splice(MAX_LEADERBOARD_ENTRIES);saveData();}function checkHighScore(currentScore){if(leaderboardData.length<MAX_LEADERBOARD_ENTRIES||currentScore>(leaderboardData[leaderboardData.length-1]?.score ?? -1)){return true;}return false;}
 
-        // Redimensionamento
-        function resizeAndScale(){canvas.width=window.innerWidth;canvas.height=window.innerHeight;scaleFactorHeight=canvas.height/baseHeight;scaleFactorWidth=canvas.width/baseWidth;playerHeight=basePlayerHeight*scaleFactorHeight;playerWidth=basePlayerWidth*scaleFactorHeight;obstacleDrawHeight=baseObstacleHeight*scaleFactorHeight;obstacleDrawWidth=baseObstacleWidth*scaleFactorHeight;hitboxXOffset=baseHitboxXOffset*scaleFactorHeight;hitboxYOffset=baseHitboxYOffset*scaleFactorHeight;playerHitboxWidth=playerWidth-(hitboxXOffset*2);playerHitboxHeight=playerHeight-(hitboxYOffset*2);iconSize=baseIconSize*scaleFactorHeight;buttonWidth=baseButtonWidth*scaleFactorWidth;buttonHeight=baseButtonHeight*scaleFactorHeight;playerX=50*scaleFactorWidth;groundY=canvas.height-(baseGroundHeight*scaleFactorHeight);gravity=baseGravity*scaleFactorHeight;jumpStrength=baseJumpStrength*scaleFactorHeight;doubleJumpStrength=baseDoubleJumpStrength*scaleFactorHeight;aerialObstacleMinY=groundY-obstacleDrawHeight-playerHeight*1.8;aerialObstacleMaxY=groundY-obstacleDrawHeight-playerHeight*1.1;
-            // Calcular botões (centralizados verticalmente como antes)
-            const totalButtonHeight=buttonHeight*3+(buttonHeight*0.4)*2;const msy=(canvas.height-totalButtonHeight)/2;const bs=buttonHeight*0.4;startButtonRect={x:canvas.width/2-buttonWidth/2,y:msy,width:buttonWidth,height:buttonHeight};shopButtonRect={x:canvas.width/2-buttonWidth/2,y:msy+buttonHeight+bs,width:buttonWidth,height:buttonHeight};leaderboardButtonRect={x:canvas.width/2-buttonWidth/2,y:msy+(buttonHeight+bs)*2,width:buttonWidth,height:buttonHeight};
-            // Botões Loja/Leaderboard (Voltar)
-            const bm=20*scaleFactorWidth;const bw=buttonWidth*0.8;const bh=buttonHeight*0.8;shopBackButtonRect={x:canvas.width-bw-bm,y:canvas.height-bh-bm,width:bw,height:bh};const buyY=(100+35+40)*scaleFactorHeight;shopBuyLivesButtonRect={x:canvas.width/2-buttonWidth/2,y:buyY,width:buttonWidth,height:buttonHeight};leaderboardBackButtonRect={x:canvas.width-bw-bm,y:canvas.height-bh-bm,width:bw,height:bh};
-            if(gameState!=='LOADING'){draw();}
-        }
+        // Redimensionamento (igual)
+        function resizeAndScale(){canvas.width=window.innerWidth;canvas.height=window.innerHeight;scaleFactorHeight=canvas.height/baseHeight;scaleFactorWidth=canvas.width/baseWidth;playerHeight=basePlayerHeight*scaleFactorHeight;playerWidth=basePlayerWidth*scaleFactorHeight;obstacleDrawHeight=baseObstacleHeight*scaleFactorHeight;obstacleDrawWidth=baseObstacleWidth*scaleFactorHeight;hitboxXOffset=baseHitboxXOffset*scaleFactorHeight;hitboxYOffset=baseHitboxYOffset*scaleFactorHeight;playerHitboxWidth=playerWidth-(hitboxXOffset*2);playerHitboxHeight=playerHeight-(hitboxYOffset*2);iconSize=baseIconSize*scaleFactorHeight;buttonWidth=baseButtonWidth*scaleFactorWidth;buttonHeight=baseButtonHeight*scaleFactorHeight;playerX=50*scaleFactorWidth;groundY=canvas.height-(baseGroundHeight*scaleFactorHeight);gravity=baseGravity*scaleFactorHeight;jumpStrength=baseJumpStrength*scaleFactorHeight;doubleJumpStrength=baseDoubleJumpStrength*scaleFactorHeight;aerialObstacleMinY=groundY-obstacleDrawHeight-playerHeight*1.8;aerialObstacleMaxY=groundY-obstacleDrawHeight-playerHeight*1.1;const th=buttonHeight*3+(buttonHeight*0.4)*2;const msy=(canvas.height-th)/2;const bs=buttonHeight*0.4;startButtonRect={x:canvas.width/2-buttonWidth/2,y:msy,width:buttonWidth,height:buttonHeight};shopButtonRect={x:canvas.width/2-buttonWidth/2,y:msy+buttonHeight+bs,width:buttonWidth,height:buttonHeight};leaderboardButtonRect={x:canvas.width/2-buttonWidth/2,y:msy+(buttonHeight+bs)*2,width:buttonWidth,height:buttonHeight};const bm=20*scaleFactorWidth;const bw=buttonWidth*0.8;const bh=buttonHeight*0.8;shopBackButtonRect={x:canvas.width-bw-bm,y:canvas.height-bh-bm,width:bw,height:bh};const buyY=(100+35+40)*scaleFactorHeight;shopBuyLivesButtonRect={x:canvas.width/2-buttonWidth/2,y:buyY,width:buttonWidth,height:buttonHeight};leaderboardBackButtonRect={x:canvas.width-bw-bm,y:canvas.height-bh-bm,width:bw,height:bh};if(gameState!=='LOADING'){draw();}}
 
-        // Carregamento
-        function onAllAssetsLoaded(){loadData();gameState='MENU';resizeAndScale();gameLoop();}function assetLoaded(){assetsLoaded++;if(assetsLoaded===totalAssets){onAllAssetsLoaded();}}
-        playerImage.onload=()=>{playerImageLoaded=true;assetLoaded();};playerImage.onerror=()=>{console.error("Erro 'images.png'.");};obstacleImage.onload=()=>{obstacleImageLoaded=true;assetLoaded();};obstacleImage.onerror=()=>{console.error("Erro 'pedroaugusto.png'.");};backgroundImage.onload=()=>{backgroundImageLoaded=true;assetLoaded();};backgroundImage.onerror=()=>{console.error("Erro 'fundo.png'.");};coinImage.onload=()=>{coinImageLoaded=true;assetLoaded();};coinImage.onerror=()=>{console.error("Erro 'coin.png'.");};lifeImage.onload=()=>{lifeImageLoaded=true;assetLoaded();};lifeImage.onerror=()=>{console.error("Erro 'vida.png'.");};
+        // <<< CARREGAMENTO ATUALIZADO >>>
+        function onAllAssetsLoaded(){loadData();gameState='MENU';resizeAndScale();gameLoop();}
+        function assetLoaded(assetName){assetsLoaded++;console.log(`Asset loaded: ${assetName} (${assetsLoaded}/${totalAssets})`);if(assetsLoaded===totalAssets){onAllAssetsLoaded();}}
+        playerImage.onload=()=>{playerImageLoaded=true;assetLoaded('player');};playerImage.onerror=()=>{console.error("Erro 'images.png'.");assetLoaded('player ERROR');};
+        obstacleImage.onload=()=>{obstacleImageLoaded=true;assetLoaded('obstacle');};obstacleImage.onerror=()=>{console.error("Erro 'pedroaugusto.png'.");assetLoaded('obstacle ERROR');};
+        backgroundImage.onload=()=>{backgroundImageLoaded=true;assetLoaded('background');};backgroundImage.onerror=()=>{console.error("Erro 'fundo.png'.");assetLoaded('background ERROR');};
+        coinImage.onload=()=>{coinImageLoaded=true;assetLoaded('coin');};coinImage.onerror=()=>{console.error("Erro 'coin.png'.");assetLoaded('coin ERROR');};
+        lifeImage.onload=()=>{lifeImageLoaded=true;assetLoaded('life');};lifeImage.onerror=()=>{console.error("Erro 'vida.png'.");assetLoaded('life ERROR');};
+        gameOverImage.onload=()=>{gameOverImageLoaded=true;assetLoaded('gameOverImg');}; // <<< ONLOAD GAME OVER
+        gameOverImage.onerror=()=>{console.error("Erro 'gameover.jpg'.");assetLoaded('gameOverImg ERROR');}; // <<< ONERROR GAME OVER
 
-        // Ação Principal
+        // Ação Principal (igual)
         function handlePrimaryAction(){switch(gameState){case'PLAYING':if(onGround){jumpSound.currentTime=0;jumpSound.play();velocityY=jumpStrength;onGround=false;canDoubleJump=true;}else if(canDoubleJump){jumpSound.currentTime=0;jumpSound.play();velocityY=doubleJumpStrength;canDoubleJump=false;}break;case'GAME_OVER':isGameOver=false;gameState='MENU';break;}}
 
-        // Funções do Jogo
+        // Funções do Jogo (reset, spawn, update - iguais)
         function resetGame(){if(!animationFrameId&&gameState==='PLAYING'){gameLoop();}playerY=groundY-playerHeight;velocityY=0;obstacles=[];score=0;obstacleSpawnTimer=0;nextSpawnInterval=120;isGameOver=false;onGround=true;canDoubleJump=false;currentLives=startingLivesBase+purchasedExtraLives;isInvincible=false;invincibilityTimer=0;}
         function spawnObstacle(){let oY,t;if(Math.random()<0.5){t='ground';oY=groundY-obstacleDrawHeight;}else{t='air';oY=Math.random()*(aerialObstacleMaxY-aerialObstacleMinY)+aerialObstacleMinY;}obstacles.push({x:canvas.width,y:oY,width:obstacleDrawWidth,height:obstacleDrawHeight,image:obstacleImage,type:t,scored:false});nextSpawnInterval=Math.floor(Math.random()*(maxSpawnInterval-minSpawnInterval+1))+minSpawnInterval;}
+        function update(){titleColorTimer++;if(titleColorTimer>=titleColorInterval){titleColorTimer=0;titleColorIndex=(titleColorIndex+1)%titleColors.length;}if(gameState!=='PLAYING'){if(isGameOver&&gameState!=='GAME_OVER')gameState='GAME_OVER';return;}if(isInvincible){invincibilityTimer--;if(invincibilityTimer<=0){isInvincible=false;}}if(!onGround){velocityY+=gravity;playerY+=velocityY;}if(playerY+playerHeight>=groundY){playerY=groundY-playerHeight;velocityY=0;if(!onGround){onGround=true;canDoubleJump=false;}}if(playerY<0){playerY=0;velocityY=0;}obstacleSpawnTimer++;if(obstacleSpawnTimer>=nextSpawnInterval){spawnObstacle();obstacleSpawnTimer=0;}for(let i=obstacles.length-1;i>=0;i--){let o=obstacles[i];o.x-=baseObstacleSpeed;if(o.x+o.width<0){obstacles.splice(i,1);continue;}let pX=playerX+hitboxXOffset;let pY=playerY+hitboxYOffset;if(!isInvincible&&pX<o.x+o.width&&pX+playerHitboxWidth>o.x&&pY<o.y+o.height&&pY+playerHitboxHeight>o.y){currentLives--;obstacles.splice(i,1);if(currentLives<=0){isGameOver=true;gameOverSound.currentTime=0;gameOverSound.play();if(purchasedExtraLives>0){purchasedExtraLives=0;saveData();}if(checkHighScore(score)){let pN=prompt(`Novo Recorde!\nPontuação:${score}\nNome(10 letras):`,"JOGADOR");if(pN){addScoreToLeaderboard(pN.substring(0,10).toUpperCase(),score);}else{addScoreToLeaderboard("???",score);}}gameState='GAME_OVER';return;}else{isInvincible=true;invincibilityTimer=invincibilityDuration;}}if(o.x+o.width<playerX&&!o.scored){score++;o.scored=true;if(score>0&&score%5===0){coins++;saveData();}}}}
 
-        // <<< UPDATE ATUALIZADO PARA ANIMAR TÍTULO >>>
-        function update(){
-            // Animação do Título (roda sempre)
-            titleColorTimer++;
-            if (titleColorTimer >= titleColorInterval) {
-                titleColorTimer = 0;
-                titleColorIndex = (titleColorIndex + 1) % titleColors.length;
-            }
-
-            // Lógica principal do jogo (só roda se PLAYING)
-            if(gameState!=='PLAYING'){if(isGameOver&&gameState!=='GAME_OVER')gameState='GAME_OVER';return;}
-            if(isInvincible){invincibilityTimer--;if(invincibilityTimer<=0){isInvincible=false;}}if(!onGround){velocityY+=gravity;playerY+=velocityY;}if(playerY+playerHeight>=groundY){playerY=groundY-playerHeight;velocityY=0;if(!onGround){onGround=true;canDoubleJump=false;}}if(playerY<0){playerY=0;velocityY=0;}obstacleSpawnTimer++;if(obstacleSpawnTimer>=nextSpawnInterval){spawnObstacle();obstacleSpawnTimer=0;}for(let i=obstacles.length-1;i>=0;i--){let o=obstacles[i];o.x-=baseObstacleSpeed;if(o.x+o.width<0){obstacles.splice(i,1);continue;}let pX=playerX+hitboxXOffset;let pY=playerY+hitboxYOffset;if(!isInvincible&&pX<o.x+o.width&&pX+playerHitboxWidth>o.x&&pY<o.y+o.height&&pY+playerHitboxHeight>o.y){currentLives--;obstacles.splice(i,1);if(currentLives<=0){isGameOver=true;gameOverSound.currentTime=0;gameOverSound.play();if(purchasedExtraLives>0){purchasedExtraLives=0;saveData();}if(checkHighScore(score)){let pN=prompt(`Novo Recorde!\nPontuação:${score}\nNome(10 letras):`,"JOGADOR");if(pN){addScoreToLeaderboard(pN.substring(0,10).toUpperCase(),score);}else{addScoreToLeaderboard("???",score);}}gameState='GAME_OVER';return;}else{isInvincible=true;invincibilityTimer=invincibilityDuration;}}if(o.x+o.width<playerX&&!o.scored){score++;o.scored=true;if(score>0&&score%5===0){coins++;saveData();}}}}
-
-        // <<< DRAW ATUALIZADA COM NOVO LAYOUT DO MENU >>>
+        // DRAW
         function draw() {
             // 1. Fundo
             if(backgroundImageLoaded){ctx.drawImage(backgroundImage,0,0,canvas.width,canvas.height);}
             else{ctx.fillStyle=skyColor;ctx.fillRect(0,0,canvas.width,canvas.height);}
 
             // 2. Desenho por Estado
-            if (gameState === 'MENU') {
-                // Título Animado
-                let titleFontSize = 24 * scaleFactorHeight;
-                ctx.font = `bold ${titleFontSize}px 'Arial Black', Arial, sans-serif`;
-                ctx.textAlign = "center";
-                ctx.fillStyle = titleColors[titleColorIndex];
-                ctx.strokeStyle = "black"; ctx.lineWidth = 2 * scaleFactorHeight;
-                const titleX = canvas.width / 2;
-                const titleY = 60 * scaleFactorHeight; // Posição Y do título
-                ctx.strokeText(gameTitle, titleX, titleY);
-                ctx.fillText(gameTitle, titleX, titleY);
+            if (gameState === 'MENU') { /* ... (código menu igual v5.4) ... */ const menuPlayerScale=1.0;const menuPlayerWidth=playerWidth*menuPlayerScale;const menuPlayerHeight=playerHeight*menuPlayerScale;let titleFontSize=28*scaleFactorHeight;ctx.font=`bold ${titleFontSize}px 'Arial Black',Arial,sans-serif`;const titleWidth=ctx.measureText(gameTitle).width;const imageTitleSpacing=15*scaleFactorWidth;const combinedWidth=menuPlayerWidth+imageTitleSpacing+titleWidth;const startX=(canvas.width-combinedWidth)/2;const elementY=55*scaleFactorHeight;const scorpionX=startX;const scorpionY=elementY-(menuPlayerHeight/1.8);const titleX=startX+menuPlayerWidth+imageTitleSpacing;if(playerImageLoaded){ctx.drawImage(playerImage,scorpionX,scorpionY,menuPlayerWidth,menuPlayerHeight);}ctx.textAlign="left";ctx.fillStyle=titleColors[titleColorIndex];ctx.strokeStyle="black";ctx.lineWidth=2*scaleFactorHeight;ctx.font=`bold ${titleFontSize}px 'Arial Black',Arial,sans-serif`;ctx.strokeText(gameTitle,titleX,elementY);ctx.fillText(gameTitle,titleX,elementY);ctx.textAlign="center";if(obstacleImageLoaded){const d=1.0,w=obstacleDrawWidth*d,h=obstacleDrawHeight*d,s=h*1.1,y=(canvas.height-(3*h+2*(s-h)))/2,m=canvas.width*0.15,l=m-w/2,r=canvas.width-m-w/2;ctx.drawImage(obstacleImage,l,y,w,h);ctx.drawImage(obstacleImage,l,y+s,w,h);ctx.drawImage(obstacleImage,l,y+s*2,w,h);ctx.drawImage(obstacleImage,r,y,w,h);ctx.drawImage(obstacleImage,r,y+s,w,h);ctx.drawImage(obstacleImage,r,y+s*2,w,h);}ctx.fillStyle="#00A000";ctx.strokeStyle="#006400";ctx.lineWidth=2*scaleFactorHeight;if(startButtonRect){ctx.fillRect(startButtonRect.x,startButtonRect.y,startButtonRect.width,startButtonRect.height);ctx.strokeRect(startButtonRect.x,startButtonRect.y,startButtonRect.width,startButtonRect.height);}if(shopButtonRect){ctx.fillRect(shopButtonRect.x,shopButtonRect.y,shopButtonRect.width,shopButtonRect.height);ctx.strokeRect(shopButtonRect.x,shopButtonRect.y,shopButtonRect.width,shopButtonRect.height);}if(leaderboardButtonRect){ctx.fillRect(leaderboardButtonRect.x,leaderboardButtonRect.y,leaderboardButtonRect.width,leaderboardButtonRect.height);ctx.strokeRect(leaderboardButtonRect.x,leaderboardButtonRect.y,leaderboardButtonRect.width,leaderboardButtonRect.height);}let fb=20*scaleFactorHeight;ctx.fillStyle="#FFFFFF";ctx.font=`bold ${fb}px Arial`;ctx.textAlign="center";ctx.textBaseline="middle";if(startButtonRect)ctx.fillText("Iniciar Jogo",startButtonRect.x+startButtonRect.width/2,startButtonRect.y+startButtonRect.height/2);if(shopButtonRect)ctx.fillText("Loja",shopButtonRect.x+shopButtonRect.width/2,shopButtonRect.y+shopButtonRect.height/2);if(leaderboardButtonRect)ctx.fillText("Líderes",leaderboardButtonRect.x+leaderboardButtonRect.width/2,leaderboardButtonRect.y+leaderboardButtonRect.height/2);ctx.textBaseline="alphabetic";const uiY_menu=25*scaleFactorHeight,ux_menu=10*scaleFactorWidth,sp_menu=10*scaleFactorWidth;let cX_menu=ux_menu;if(coinImageLoaded){ctx.drawImage(coinImage,cX_menu,uiY_menu-iconSize*0.8,iconSize,iconSize);cX_menu+=iconSize+sp_menu;}ctx.fillStyle="#FFFFFF";ctx.strokeStyle="#000000";ctx.lineWidth=1;ctx.font=`${20*scaleFactorHeight}px Arial`;ctx.textAlign="left";ctx.strokeText(`${coins}`,cX_menu,uiY_menu);ctx.fillText(`${coins}`,cX_menu,uiY_menu);}
+            else if (gameState === 'SHOP') { /* ... (código loja igual) ... */ const uiY=25*scaleFactorHeight,ux=10*scaleFactorWidth,sp=10*scaleFactorWidth;let cX=ux;if(coinImageLoaded){ctx.drawImage(coinImage,cX,uiY-iconSize*0.8,iconSize,iconSize);cX+=iconSize+sp;}ctx.fillStyle="#FFFFFF";ctx.strokeStyle="#000000";ctx.lineWidth=1;ctx.font=`${20*scaleFactorHeight}px Arial`;ctx.textAlign="left";ctx.strokeText(`${coins}`, cX, uiY);ctx.fillText(`${coins}`, cX, uiY);let itemY = 100*scaleFactorHeight;ctx.fillStyle = "#FFFFFF"; ctx.textAlign = "center"; ctx.font = `bold ${25*scaleFactorHeight}px Arial`;ctx.strokeText("Comprar 1 Vida Extra", canvas.width / 2, itemY); ctx.fillText("Comprar 1 Vida Extra", canvas.width / 2, itemY);itemY += 35*scaleFactorHeight;ctx.font = `${20*scaleFactorHeight}px Arial`;ctx.strokeText(`Custo: ${costOfSingleLife} Moedas`, canvas.width / 2, itemY); ctx.fillText(`Custo: ${costOfSingleLife} Moedas`, canvas.width / 2, itemY);if(shopBuyLivesButtonRect){ctx.fillStyle="#00A000";ctx.strokeStyle="#006400";ctx.lineWidth=2*scaleFactorHeight;ctx.fillRect(shopBuyLivesButtonRect.x,shopBuyLivesButtonRect.y,shopBuyLivesButtonRect.width,shopBuyLivesButtonRect.height);ctx.strokeRect(shopBuyLivesButtonRect.x,shopBuyLivesButtonRect.y,shopBuyLivesButtonRect.width,shopBuyLivesButtonRect.height);ctx.fillStyle="#FFFFFF";ctx.font=`bold ${20*scaleFactorHeight}px Arial`;ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText("Comprar",shopBuyLivesButtonRect.x+shopBuyLivesButtonRect.width/2,shopBuyLivesButtonRect.y+shopBuyLivesButtonRect.height/2);ctx.textBaseline="alphabetic";}if(shopMessageTimer>0){shopMessageTimer--;ctx.fillStyle=(shopMessage.includes("sucesso"))?"#00FF00":"#FF0000";ctx.font=`bold ${18*scaleFactorHeight}px Arial`;ctx.textAlign="center";ctx.fillText(shopMessage,canvas.width/2,shopBuyLivesButtonRect.y+buttonHeight+20*scaleFactorHeight);}if(shopBackButtonRect){ctx.fillStyle="#A00000";ctx.strokeStyle="#640000";ctx.lineWidth=2*scaleFactorHeight;ctx.fillRect(shopBackButtonRect.x,shopBackButtonRect.y,shopBackButtonRect.width,shopBackButtonRect.height);ctx.strokeRect(shopBackButtonRect.x,shopBackButtonRect.y,shopBackButtonRect.width,shopBackButtonRect.height);ctx.fillStyle="#FFFFFF";ctx.font=`bold ${20*scaleFactorHeight}px Arial`;ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText("Voltar",shopBackButtonRect.x+shopBackButtonRect.width/2,shopBackButtonRect.y+shopBackButtonRect.height/2);ctx.textBaseline="alphabetic";} }
+            else if (gameState === 'LEADERBOARD') { /* ... (código leaderboard igual) ... */ let tfs=30*scaleFactorHeight;let efs=18*scaleFactorHeight;let es=efs*1.5;let py=20*scaleFactorHeight;let pW=canvas.width*0.7;let ph=py*2+tfs*1.8+(Math.max(leaderboardData.length,1)*es);let pX=(canvas.width-pW)/2;let pY=60*scaleFactorHeight-tfs*0.8;ctx.fillStyle="rgba(80,80,80,0.8)";ctx.strokeStyle="rgba(200,200,200,0.9)";ctx.lineWidth=2*scaleFactorHeight;ctx.fillRect(pX,pY,pW,ph);ctx.strokeRect(pX,pY,pW,ph);let cy=pY+py+tfs/2;ctx.fillStyle="#FFFFFF";ctx.strokeStyle="#000000";ctx.lineWidth=1.5*scaleFactorHeight;ctx.font=`bold ${tfs}px Arial`;ctx.textAlign="center";ctx.strokeText("Quadro de Líderes",canvas.width/2,cy);ctx.fillText("Quadro de Líderes",canvas.width/2,cy);cy+=tfs*1.8;ctx.font=`${efs}px Arial`;const rX=pX+pW*0.15;const nX=pX+pW*0.30;const sX=pX+pW*0.85;if(leaderboardData.length===0){ctx.textAlign="center";ctx.fillText("- Nenhum recorde -",canvas.width/2,cy);}else{leaderboardData.forEach((en,i)=>{if(i<MAX_LEADERBOARD_ENTRIES){ctx.fillStyle="#FFFFFF";ctx.textAlign="right";ctx.strokeText(`${i+1}.`,rX,cy);ctx.fillText(`${i+1}.`,rX,cy);ctx.textAlign="left";ctx.strokeText(en.name,nX,cy);ctx.fillText(en.name,nX,cy);ctx.textAlign="right";ctx.strokeText(en.score.toString(),sX,cy);ctx.fillText(en.score.toString(),sX,cy);cy+=es;}});}if(leaderboardBackButtonRect){ctx.fillStyle="#A00000";ctx.strokeStyle="#640000";ctx.lineWidth=2*scaleFactorHeight;ctx.fillRect(leaderboardBackButtonRect.x,leaderboardBackButtonRect.y,leaderboardBackButtonRect.width,leaderboardBackButtonRect.height);ctx.strokeRect(leaderboardBackButtonRect.x,leaderboardBackButtonRect.y,leaderboardBackButtonRect.width,leaderboardBackButtonRect.height);ctx.fillStyle="#FFFFFF";ctx.font=`bold ${20*scaleFactorHeight}px Arial`;ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText("Voltar",leaderboardBackButtonRect.x+leaderboardBackButtonRect.width/2,leaderboardBackButtonRect.y+leaderboardBackButtonRect.height/2);ctx.textBaseline="alphabetic";} }
+            else if (gameState === 'PLAYING') { /* ... (código playing igual) ... */ if(obstacleImageLoaded){for(let o of obstacles){ctx.drawImage(o.image,o.x,o.y,o.width,o.height);}}let dP=!isInvincible||Math.floor(Date.now()/100)%2===0;if(dP&&playerImageLoaded){ctx.drawImage(playerImage,playerX,playerY,playerWidth,playerHeight);}const uiY_play=25*scaleFactorHeight,ux_play=10*scaleFactorWidth,sp_play=10*scaleFactorWidth;ctx.fillStyle="#000000";ctx.font=`${20*scaleFactorHeight}px Arial`;ctx.textAlign="left";let cX_play=ux_play;ctx.fillText(`Score:${score}`,cX_play,uiY_play);cX_play+=ctx.measureText(`Score:${score}`).width+sp_play*2;if(coinImageLoaded){ctx.drawImage(coinImage,cX_play,uiY_play-iconSize*0.8,iconSize,iconSize);cX_play+=iconSize+sp_play;}ctx.fillText(`${coins}`,cX_play,uiY_play);cX_play+=ctx.measureText(`${coins}`).width+sp_play*2;if(lifeImageLoaded){for(let i=0;i<currentLives;i++){ctx.drawImage(lifeImage,cX_play+i*(iconSize+sp_play*0.5),uiY_play-iconSize*0.8,iconSize,iconSize);}}}
 
-                // Imagem do Jogador (Escorpião) no Menu
-                if (playerImageLoaded) {
-                    const menuPlayerScale = 1.3; // Tamanho do escorpião no menu
-                    const menuPlayerWidth = playerWidth * menuPlayerScale;
-                    const menuPlayerHeight = playerHeight * menuPlayerScale;
-                    const menuPlayerX = canvas.width / 2 - menuPlayerWidth / 2; // Centralizado
-                    // Posiciona abaixo do título, antes dos botões (pega o Y do primeiro botão e sobe)
-                    const menuPlayerY = startButtonRect ? startButtonRect.y - menuPlayerHeight - (20 * scaleFactorHeight) : titleY + titleFontSize;
-                    ctx.drawImage(playerImage, menuPlayerX, menuPlayerY, menuPlayerWidth, menuPlayerHeight);
+            // <<< DRAW GAME OVER ATUALIZADO PARA INCLUIR IMAGEM >>>
+            else if (gameState === 'GAME_OVER') {
+                // Desenha Jogo Final
+                if(obstacleImageLoaded){for(let o of obstacles){ctx.drawImage(o.image,o.x,o.y,o.width,o.height);}}
+                if(playerImageLoaded){ctx.drawImage(playerImage,playerX,playerY,playerWidth,playerHeight);}
+                // Overlay Escuro
+                ctx.fillStyle="rgba(0,0,0,0.7)";ctx.fillRect(0,0,canvas.width,canvas.height);
+                // Textos
+                ctx.fillStyle="#ffffff";let fgo=40*scaleFactorHeight,fsc=20*scaleFactorHeight,fr=16*scaleFactorHeight;
+                ctx.font=`bold ${fgo}px Arial`; ctx.textAlign="center";
+                let currentTextY = canvas.height / 2 - fgo; // Posição Y inicial para textos/imagem
+                ctx.fillText("Game Over", canvas.width / 2, currentTextY);
+                currentTextY += fgo * 1.2;
+                ctx.font=`${fsc}px Arial`;
+                ctx.fillText(`Score Final: ${score}`, canvas.width / 2, currentTextY);
+                currentTextY += fsc * 1.5;
+
+                // Desenha Imagem de Game Over (gameover.jpg)
+                let imgDrawY = currentTextY; // Y onde a imagem começa
+                if (gameOverImageLoaded && gameOverImage.naturalWidth > 0) { // Verifica se carregou e tem tamanho
+                    const baseGameOverImageHeight = 60; // Altura base desejada
+                    let imgH = baseGameOverImageHeight * scaleFactorHeight;
+                    let imgW = imgH * (gameOverImage.naturalWidth / gameOverImage.naturalHeight);
+
+                    // Limita largura máxima
+                    const maxW = canvas.width * 0.5;
+                    if (imgW > maxW) {
+                        imgW = maxW;
+                        imgH = imgW * (gameOverImage.naturalHeight / gameOverImage.naturalWidth);
+                    }
+
+                    const imgX = canvas.width / 2 - imgW / 2; // Centraliza X
+                    ctx.drawImage(gameOverImage, imgX, imgDrawY, imgW, imgH);
+                    currentTextY = imgDrawY + imgH + fsc; // Atualiza Y para o próximo texto ficar abaixo da imagem
+                } else {
+                    currentTextY += 20 * scaleFactorHeight; // Adiciona um espaço se a imagem não carregar
                 }
 
-                // Decorações "pedroaugusto" (Posição Ajustada)
-                if (obstacleImageLoaded) {
-                    const decorScaleMultiplier = 1.0; // Tamanho da decoração (100% do obstáculo)
-                    const decorWidth = obstacleDrawWidth * decorScaleMultiplier;
-                    const decorHeight = obstacleDrawHeight * decorScaleMultiplier;
-                    const spacing = decorHeight * 1.1;
-                    const startY = (canvas.height - (3 * decorHeight + 2 * (spacing - decorHeight))) / 2;
-                    const sideMargin = canvas.width * 0.15; // <<< Margem de 15% (mais recuado)
-                    const leftX = sideMargin - decorWidth / 2; // Centraliza na margem
-                    const rightX = canvas.width - sideMargin - decorWidth / 2;
+                // Desenha Texto de Reinício abaixo da imagem (ou espaço)
+                ctx.font=`${fr}px Arial`;
+                ctx.fillText("Pressione ESPAÇO para Voltar ao Menu", canvas.width / 2, currentTextY);
 
-                    ctx.drawImage(obstacleImage, leftX, startY, decorWidth, decorHeight);
-                    ctx.drawImage(obstacleImage, leftX, startY + spacing, decorWidth, decorHeight);
-                    ctx.drawImage(obstacleImage, leftX, startY + spacing * 2, decorWidth, decorHeight);
-                    ctx.drawImage(obstacleImage, rightX, startY, decorWidth, decorHeight);
-                    ctx.drawImage(obstacleImage, rightX, startY + spacing, decorWidth, decorHeight);
-                    ctx.drawImage(obstacleImage, rightX, startY + spacing * 2, decorWidth, decorHeight);
-                }
-
-                // Botões Verdes (posição calculada em resizeAndScale)
-                ctx.fillStyle="#00A000"; ctx.strokeStyle="#006400"; ctx.lineWidth=2*scaleFactorHeight;
-                if(startButtonRect){ ctx.fillRect(startButtonRect.x,startButtonRect.y,startButtonRect.width,startButtonRect.height); ctx.strokeRect(startButtonRect.x,startButtonRect.y,startButtonRect.width,startButtonRect.height); }
-                if(shopButtonRect){ ctx.fillRect(shopButtonRect.x,shopButtonRect.y,shopButtonRect.width,shopButtonRect.height); ctx.strokeRect(shopButtonRect.x,shopButtonRect.y,shopButtonRect.width,shopButtonRect.height); }
-                if(leaderboardButtonRect){ ctx.fillRect(leaderboardButtonRect.x,leaderboardButtonRect.y,leaderboardButtonRect.width,leaderboardButtonRect.height); ctx.strokeRect(leaderboardButtonRect.x,leaderboardButtonRect.y,leaderboardButtonRect.width,leaderboardButtonRect.height); }
-
-                // Texto dos Botões
-                let fb=20*scaleFactorHeight; ctx.fillStyle="#FFFFFF"; ctx.font=`bold ${fb}px Arial`; ctx.textAlign="center"; ctx.textBaseline="middle";
-                if(startButtonRect) ctx.fillText("Iniciar Jogo",startButtonRect.x+startButtonRect.width/2,startButtonRect.y+startButtonRect.height/2);
-                if(shopButtonRect) ctx.fillText("Loja",shopButtonRect.x+shopButtonRect.width/2,shopButtonRect.y+shopButtonRect.height/2);
-                if(leaderboardButtonRect) ctx.fillText("Líderes",leaderboardButtonRect.x+leaderboardButtonRect.width/2,leaderboardButtonRect.y+leaderboardButtonRect.height/2);
-                ctx.textBaseline="alphabetic";
-
-                // Moedas no Menu
-                const uiY=25*scaleFactorHeight,ux=10*scaleFactorWidth,sp=10*scaleFactorWidth; let cX=ux; if(coinImageLoaded){ctx.drawImage(coinImage,cX,uiY-iconSize*0.8,iconSize,iconSize); cX+=iconSize+sp;} ctx.fillStyle="#FFFFFF"; ctx.strokeStyle="#000000"; ctx.lineWidth=1; ctx.font=`${20*scaleFactorHeight}px Arial`; ctx.textAlign="left"; ctx.strokeText(`${coins}`,cX,uiY); ctx.fillText(`${coins}`,cX,uiY);
-
-            } // Fim MENU
-
-            else if (gameState === 'SHOP') { /* ... (código loja igual) ... */ const uiY=25*scaleFactorHeight,ux=10*scaleFactorWidth,sp=10*scaleFactorWidth;let cX=ux;if(coinImageLoaded){ctx.drawImage(coinImage,cX,uiY-iconSize*0.8,iconSize,iconSize);cX+=iconSize+sp;}ctx.fillStyle="#FFFFFF";ctx.strokeStyle="#000000";ctx.lineWidth=1;ctx.font=`${20*scaleFactorHeight}px Arial`;ctx.textAlign="left";ctx.strokeText(`${coins}`, cX, uiY);ctx.fillText(`${coins}`, cX, uiY);let itemY = 100*scaleFactorHeight;ctx.fillStyle = "#FFFFFF"; ctx.textAlign = "center"; ctx.font = `bold ${25*scaleFactorHeight}px Arial`;ctx.strokeText("Comprar 1 Vida Extra", canvas.width / 2, itemY); ctx.fillText("Comprar 1 Vida Extra", canvas.width / 2, itemY);itemY += 35*scaleFactorHeight;ctx.font = `${20*scaleFactorHeight}px Arial`;ctx.strokeText(`Custo: ${costOfSingleLife} Moedas`, canvas.width / 2, itemY); ctx.fillText(`Custo: ${costOfSingleLife} Moedas`, canvas.width / 2, itemY);if(shopBuyLivesButtonRect){ctx.fillStyle="#00A000";ctx.strokeStyle="#006400";ctx.lineWidth=2*scaleFactorHeight;ctx.fillRect(shopBuyLivesButtonRect.x,shopBuyLivesButtonRect.y,shopBuyLivesButtonRect.width,shopBuyLivesButtonRect.height);ctx.strokeRect(shopBuyLivesButtonRect.x,shopBuyLivesButtonRect.y,shopBuyLivesButtonRect.width,shopBuyLivesButtonRect.height);ctx.fillStyle="#FFFFFF";ctx.font=`bold ${20*scaleFactorHeight}px Arial`;ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText("Comprar",shopBuyLivesButtonRect.x+shopBuyLivesButtonRect.width/2,shopBuyLivesButtonRect.y+shopBuyLivesButtonRect.height/2);ctx.textBaseline="alphabetic";}if(shopMessageTimer>0){shopMessageTimer--;ctx.fillStyle=(shopMessage.includes("sucesso"))?"#00FF00":"#FF0000";ctx.font=`bold ${18*scaleFactorHeight}px Arial`;ctx.textAlign="center";ctx.fillText(shopMessage,canvas.width/2,shopBuyLivesButtonRect.y+buttonHeight+20*scaleFactorHeight);}if(shopBackButtonRect){ctx.fillStyle="#A00000";ctx.strokeStyle="#640000";ctx.lineWidth=2*scaleFactorHeight;ctx.fillRect(shopBackButtonRect.x,shopBackButtonRect.y,shopBackButtonRect.width,shopBackButtonRect.height);ctx.strokeRect(shopBackButtonRect.x,shopBackButtonRect.y,shopBackButtonRect.width,shopBackButtonRect.height);ctx.fillStyle="#FFFFFF";ctx.font=`bold ${20*scaleFactorHeight}px Arial`;ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText("Voltar",shopBackButtonRect.x+shopBackButtonRect.width/2,shopBackButtonRect.y+shopBackButtonRect.height/2);ctx.textBaseline="alphabetic";} } // Fim SHOP
-            else if (gameState === 'LEADERBOARD') { /* ... (código leaderboard igual) ... */ let tfs=30*scaleFactorHeight;let efs=18*scaleFactorHeight;let es=efs*1.5;let py=20*scaleFactorHeight;let pW=canvas.width*0.7;let ph=py*2+tfs*1.8+(Math.max(leaderboardData.length,1)*es);let pX=(canvas.width-pW)/2;let pY=60*scaleFactorHeight-tfs*0.8;ctx.fillStyle="rgba(80,80,80,0.8)";ctx.strokeStyle="rgba(200,200,200,0.9)";ctx.lineWidth=2*scaleFactorHeight;ctx.fillRect(pX,pY,pW,ph);ctx.strokeRect(pX,pY,pW,ph);let cy=pY+py+tfs/2;ctx.fillStyle="#FFFFFF";ctx.strokeStyle="#000000";ctx.lineWidth=1.5*scaleFactorHeight;ctx.font=`bold ${tfs}px Arial`;ctx.textAlign="center";ctx.strokeText("Quadro de Líderes",canvas.width/2,cy);ctx.fillText("Quadro de Líderes",canvas.width/2,cy);cy+=tfs*1.8;ctx.font=`${efs}px Arial`;const rX=pX+pW*0.15;const nX=pX+pW*0.30;const sX=pX+pW*0.85;if(leaderboardData.length===0){ctx.textAlign="center";ctx.fillText("- Nenhum recorde -",canvas.width/2,cy);}else{leaderboardData.forEach((en,i)=>{if(i<MAX_LEADERBOARD_ENTRIES){ctx.fillStyle="#FFFFFF";ctx.textAlign="right";ctx.strokeText(`${i+1}.`,rX,cy);ctx.fillText(`${i+1}.`,rX,cy);ctx.textAlign="left";ctx.strokeText(en.name,nX,cy);ctx.fillText(en.name,nX,cy);ctx.textAlign="right";ctx.strokeText(en.score.toString(),sX,cy);ctx.fillText(en.score.toString(),sX,cy);cy+=es;}});}if(leaderboardBackButtonRect){ctx.fillStyle="#A00000";ctx.strokeStyle="#640000";ctx.lineWidth=2*scaleFactorHeight;ctx.fillRect(leaderboardBackButtonRect.x,leaderboardBackButtonRect.y,leaderboardBackButtonRect.width,leaderboardBackButtonRect.height);ctx.strokeRect(leaderboardBackButtonRect.x,leaderboardBackButtonRect.y,leaderboardBackButtonRect.width,leaderboardBackButtonRect.height);ctx.fillStyle="#FFFFFF";ctx.font=`bold ${20*scaleFactorHeight}px Arial`;ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText("Voltar",leaderboardBackButtonRect.x+leaderboardBackButtonRect.width/2,leaderboardBackButtonRect.y+leaderboardBackButtonRect.height/2);ctx.textBaseline="alphabetic";} } // Fim LEADERBOARD
-            else if (gameState === 'PLAYING') { /* ... (código playing igual) ... */ if(obstacleImageLoaded){for(let o of obstacles){ctx.drawImage(o.image,o.x,o.y,o.width,o.height);}}let dP=!isInvincible||Math.floor(Date.now()/100)%2===0;if(dP&&playerImageLoaded){ctx.drawImage(playerImage,playerX,playerY,playerWidth,playerHeight);}const uiY_play=25*scaleFactorHeight,ux_play=10*scaleFactorWidth,sp_play=10*scaleFactorWidth;ctx.fillStyle="#000000";ctx.font=`${20*scaleFactorHeight}px Arial`;ctx.textAlign="left";let cX_play=ux_play;ctx.fillText(`Score:${score}`,cX_play,uiY_play);cX_play+=ctx.measureText(`Score:${score}`).width+sp_play*2;if(coinImageLoaded){ctx.drawImage(coinImage,cX_play,uiY_play-iconSize*0.8,iconSize,iconSize);cX_play+=iconSize+sp_play;}ctx.fillText(`${coins}`,cX_play,uiY_play);cX_play+=ctx.measureText(`${coins}`).width+sp_play*2;if(lifeImageLoaded){for(let i=0;i<currentLives;i++){ctx.drawImage(lifeImage,cX_play+i*(iconSize+sp_play*0.5),uiY_play-iconSize*0.8,iconSize,iconSize);}}} // Fim PLAYING
-            else if (gameState === 'GAME_OVER') { /* ... (código game over igual) ... */ if(obstacleImageLoaded){for(let o of obstacles){ctx.drawImage(o.image,o.x,o.y,o.width,o.height);}}if(playerImageLoaded){ctx.drawImage(playerImage,playerX,playerY,playerWidth,playerHeight);}ctx.fillStyle="rgba(0,0,0,0.7)";ctx.fillRect(0,0,canvas.width,canvas.height);ctx.fillStyle="#ffffff";let fgo=40*scaleFactorHeight,fsc=20*scaleFactorHeight,fr=16*scaleFactorHeight;ctx.font=`${fgo}px Arial`;ctx.textAlign="center";ctx.fillText("Game Over",canvas.width/2,canvas.height/2-fgo);ctx.font=`${fsc}px Arial`;ctx.fillText(`Score Final:${score}`,canvas.width/2,canvas.height/2);ctx.font=`${fr}px Arial`;ctx.fillText("Pressione ESPAÇO para Voltar ao Menu",canvas.width/2,canvas.height/2+fsc*1.5);} // Fim GAME_OVER
+            } // Fim GAME_OVER
         } // Fim draw
 
         function gameLoop() { update(); draw(); animationFrameId = requestAnimationFrame(gameLoop); }
@@ -171,12 +146,13 @@
         canvas.addEventListener('touchstart', (event) => { event.preventDefault(); handleMouseClick(event.touches[0]); });
         function handleMouseClick(event){const r=canvas.getBoundingClientRect();const cX=(event.clientX||event.pageX)-r.left;const cY=(event.clientY||event.pageY)-r.top;if(gameState==='MENU'){if(startButtonRect&&cX>=startButtonRect.x&&cX<=startButtonRect.x+startButtonRect.width&&cY>=startButtonRect.y&&cY<=startButtonRect.y+startButtonRect.height){gameState='PLAYING';resetGame();}else if(shopButtonRect&&cX>=shopButtonRect.x&&cX<=shopButtonRect.x+shopButtonRect.width&&cY>=shopButtonRect.y&&cY<=shopButtonRect.y+shopButtonRect.height){gameState='SHOP';shopMessage="";shopMessageTimer=0;}else if(leaderboardButtonRect&&cX>=leaderboardButtonRect.x&&cX<=leaderboardButtonRect.x+leaderboardButtonRect.width&&cY>=leaderboardButtonRect.y&&cY<=leaderboardButtonRect.y+leaderboardButtonRect.height){gameState='LEADERBOARD';}}else if(gameState==='SHOP'){if(shopBackButtonRect&&cX>=shopBackButtonRect.x&&cX<=shopBackButtonRect.x+shopBackButtonRect.width&&cY>=shopBackButtonRect.y&&cY<=shopBackButtonRect.y+shopBackButtonRect.height){gameState='MENU';}else if(shopBuyLivesButtonRect&&cX>=shopBuyLivesButtonRect.x&&cX<=shopBuyLivesButtonRect.x+shopBuyLivesButtonRect.width&&cY>=shopBuyLivesButtonRect.y&&cY<=shopBuyLivesButtonRect.y+shopBuyLivesButtonRect.height){if(startingLivesBase+purchasedExtraLives>=maxTotalLives){shopMessage="Máximo de vidas atingido!";shopMessageTimer=120;}else if(coins>=costOfSingleLife){coins-=costOfSingleLife;purchasedExtraLives+=1;saveData();shopMessage="Compra realizada com sucesso!";shopMessageTimer=120;}else{shopMessage="Moedas insuficientes!";shopMessageTimer=120;}}}else if(gameState==='LEADERBOARD'){if(leaderboardBackButtonRect&&cX>=leaderboardBackButtonRect.x&&cX<=leaderboardBackButtonRect.x+leaderboardBackButtonRect.width&&cY>=leaderboardBackButtonRect.y&&cY<=leaderboardBackButtonRect.y+leaderboardBackButtonRect.height){gameState='MENU';}}else if(gameState==='PLAYING'){if(onGround){jumpSound.currentTime=0;jumpSound.play();velocityY=jumpStrength;onGround=false;canDoubleJump=true;}else if(canDoubleJump){jumpSound.currentTime=0;jumpSound.play();velocityY=doubleJumpStrength;canDoubleJump=false;}}else if(gameState==='GAME_OVER'){isGameOver=false;gameState='MENU';}}
 
+
         // --- Inicia o Carregamento ---
         loadData();
         playerImage.src='images.png';obstacleImage.src='pedroaugusto.png';backgroundImage.src='fundo.png';coinImage.src='coin.png';lifeImage.src='vida.png';
+        gameOverImage.src = 'gameover.jpg'; // <<< CARREGA IMAGEM GAME OVER
 
     }); // Fim DOMContentLoaded
-// <<< FIM DO SCRIPT (COPIAR ATÉ AQUI) >>>
 </script>
 
 </body>
