@@ -33,7 +33,7 @@
         const baseHitboxXOffset = 6; // <<< OFFSET REAJUSTADO (era 8, antes 5)
         const baseHitboxYOffset = 6; // <<< OFFSET REAJUSTADO (era 8, antes 5)
         const baseObstacleWidth=25;const baseObstacleHeight=35; // Mantendo obstáculo baixo
-        const baseGravity=0.3;const baseJumpStrength=-9;const baseDoubleJumpStrength=-7;const baseGroundHeight=15;const baseObstacleSpeed=4.0; const baseIconSize=20;const baseButtonWidth=200;const baseButtonHeight=45;const costOfSingleLife=5;const maxTotalLives=10;
+        const baseGravity=0.3;const baseJumpStrength=-9;const baseDoubleJumpStrength=-7;const baseGroundHeight=15;const baseObstacleSpeed=4.0; const baseIconSize=20;const baseButtonWidth=200;const baseButtonHeight=45;const costOfSingleLife=10;const maxTotalLives=10;
 
         // Variáveis Dinâmicas
         let playerWidth,playerHeight,playerX,playerY,velocityY;let hitboxXOffset,hitboxYOffset,playerHitboxWidth,playerHitboxHeight;let gravity,jumpStrength,doubleJumpStrength,onGround,canDoubleJump;let groundY;let obstacles=[],obstacleDrawWidth,obstacleDrawHeight; let obstacleSpawnTimer=0,nextSpawnInterval=120;const minSpawnInterval=70,maxSpawnInterval=150;let aerialObstacleMinY,aerialObstacleMaxY;let score=0,isGameOver=false,animationFrameId=null;let scaleFactorHeight=1,scaleFactorWidth=1;const skyColor="#87CEEB";let iconSize,buttonWidth,buttonHeight;
